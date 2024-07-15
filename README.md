@@ -1,4 +1,4 @@
-# quick_zans
+# Rick and Morty
 
 A new Flutter project.
 
