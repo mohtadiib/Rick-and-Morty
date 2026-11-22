@@ -59,7 +59,7 @@ export class Scene10_FinalBrandReveal extends SceneBase {
     const logo = smooth(clamp((t - 5.6) / 1.0)); const name = smooth(clamp((t - 6.3) / 0.9)); const slogan = smooth(clamp((t - 7.1) / 1.0));
     const out = 1 - smooth(clamp((t - 12.1) / 1.2));
     if (logo <= 0) return;
-    if (!this._logoSrc && w.assets.logoAlpha) { const c = document.createElement('canvas'); c.width = c.height = 640; c.getContext('2d').drawImage(w.assets.logoAlpha, 0, 0, 640, 640); this._logoSrc = c.toDataURL('image/png'); }
+    if (w.assets.logoAlpha && this._logoFor !== w.assets.logoAlpha) { this._logoFor = w.assets.logoAlpha; const c = document.createElement('canvas'); c.width = c.height = 640; c.getContext('2d').drawImage(w.assets.logoAlpha, 0, 0, 640, 640); this._logoSrc = c.toDataURL('image/png'); }
     const sweep = clamp((t - 6.0) / 1.6);
     const html = `<div class="endcard" style="opacity:${(out).toFixed(3)}">
         <div style="position:relative;opacity:${logo.toFixed(3)};transform:scale(${(0.92 + 0.08 * logo).toFixed(4)})">
