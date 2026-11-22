@@ -63,15 +63,16 @@ export class Scene07_FinancialManagement extends SceneBase {
     const mouse = desk.keyboard.userData.mouse.getWorldPosition(new THREE.Vector3());
     const mw = 1 - back;
     ph.state.armR = { target: wristFromSocket([mouse.x, mouse.y + 0.03, mouse.z + 0.012], [0, -0.3, -1], [0, -1, 0]), fingers: [0, -0.3, -1], palm: [0, -1, 0], weight: mw, pose: 'relaxed' };
-    // tea: lifted and sipped near the end
-    const sip = smooth(clamp((t - 19.4) / 0.6)) * (1 - smooth(clamp((t - 20.9) / 0.6)));
-    this._sip = sip;
-    const cupHome = desk.cup.position.clone().set(5.12, desk.deskH, -2.95);
-    if (sip > 0.01) {
+    // tea: reach the glass, lift, sip, put it back, withdraw
+    const reach = smooth(clamp((t - 18.9) / 0.5)) * (1 - smooth(clamp((t - 21.45) / 0.45)));
+    const lift = smooth(clamp((t - 19.4) / 0.6)) * (1 - smooth(clamp((t - 20.85) / 0.6)));
+    this._sip = reach > 0.97 && t > 19.35 && t < 21.45;
+    const cupHome = new THREE.Vector3(5.12, desk.deskH, -2.95);
+    if (reach > 0.001) {
       const mouth = new THREE.Vector3(...fromEye(ph, 0.0, -0.08, 0.1));
-      const P = cupHome.clone().add(new THREE.Vector3(0, 0.05, 0)).lerp(mouth, sip);
-      ph.state.armR = { target: wristFromSocket(P.toArray(), [-1, 0.2, 0], [0, 0, 1].map((v) => v), [0.0, -0.075, 0.035]), fingers: [-1, 0.2, 0], palm: [0, 0, 1], weight: Math.max(sip, 0.6), pose: 'grip' };
-      ph.state.headTilt = -0.05 * sip;
+      const P = cupHome.clone().add(new THREE.Vector3(0, 0.05, 0)).lerp(mouth, lift);
+      ph.state.armR = { target: wristFromSocket(P.toArray(), [-1, 0.2, 0], [0, 0, 1], [0.0, -0.075, 0.035]), fingers: [-1, 0.2, 0], palm: [0, 0, 1], weight: reach, pose: 'grip' };
+      ph.state.headTilt = -0.05 * lift;
     }
     ph.state.armL = { target: wristFromSocket([4.05, 0.79, -2.98], [0.2, -0.3, -1], [0, -1, 0]), fingers: [0.2, -0.3, -1], palm: [0, -1, 0], weight: 1 - back * 0.7, pose: 'relaxed' };
 
@@ -99,7 +100,7 @@ export class Scene07_FinancialManagement extends SceneBase {
 
   late() {
     const w = this.world; const ph = w.pharmacist;
-    if (this._sip > 0.01) placeInHand(w.desk.cup, ph.handSocket(-1), [0, -0.01, 0.045], [Math.PI / 2, 0, 0]);
+    if (this._sip) placeInHand(w.desk.cup, ph.handSocket(-1), [0, -0.01, 0.045], [Math.PI / 2, 0, 0]);
     else { w.desk.cup.position.set(5.12, w.desk.deskH, -2.95); w.desk.cup.rotation.set(0, 0, 0); }
   }
 }

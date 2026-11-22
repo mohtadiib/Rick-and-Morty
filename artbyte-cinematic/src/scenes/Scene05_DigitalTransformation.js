@@ -33,7 +33,7 @@ export class Scene05_DigitalTransformation extends SceneBase {
     const org = smooth(clamp((t - 5.9) / 4.8));
     setMood(w, 'dayDull', 'clean', org); setLook(w, 'dull', 'clean', org);
     const sweepX = -7 + 14 * clamp((t - 5.9) / 4.8);
-    w.setOrganization(org < 1 && org > 0 ? 0 : org, org > 0 && org < 1 ? sweepX : null);
+    w.setOrganization(org, org > 0 && org < 1 ? sweepX : null); // shelves follow the sweep, clutter clears progressively
     w.setShelfLabels(0);
     w.pharmacy.clock.setTime(clockSec(9, 34, 0) + t);
     w.laptop.group.visible = true; w.laptop.setOpen(1);
