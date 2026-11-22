@@ -67,7 +67,6 @@ export class ThermalPrinter {
     this.liner.castShadow = true; this.label.castShadow = true;
     this.liner.userData.base = this.liner.geometry.attributes.position.array.slice();
     this.label.userData.base = this.label.geometry.attributes.position.array.slice();
-    const luv = this.label.geometry.attributes.uv; for (let i = 0; i < luv.count; i++) luv.setXY(i, 1 - luv.getX(i), 1 - luv.getY(i)); luv.needsUpdate = true;
     this.body.add(this.liner, this.label);
     this.feed = -1;
     this.setFeed(0);

@@ -44,7 +44,7 @@ export class Scene10_FinalBrandReveal extends SceneBase {
     idle(ph, t, 0.6, 1);
     ph.state.armL = { target: wristFromSocket([-0.36, 1.035, -1.4], [0.1, -0.25, 1], [0, -1, 0.1]), fingers: [0.1, -0.25, 1], palm: [0, -1, 0.1], weight: 1, pose: 'relaxed' };
     ph.state.armR = { target: wristFromSocket([-0.85, 1.035, -1.42], [-0.1, -0.25, 1], [0, -1, 0.1]), fingers: [-0.1, -0.25, 1], palm: [0, -1, 0.1], weight: 1, pose: 'relaxed' };
-    cu.state.visible = true; cu.state.pos.set(-0.64, 0, -0.36); cu.state.yaw = PI; cu.state.look = ph.state.pos.clone().setY(1.62); cu.state.face = { smile: 0.7, brows: 0.25 }; idle(cu, t, 0.7, 7);
+    cu.state.visible = true; cu.state.pos.set(-1.12, 0, -0.42); cu.state.yaw = PI - 0.3; cu.state.look = ph.state.pos.clone().setY(1.62); cu.state.face = { smile: 0.7, brows: 0.25 }; idle(cu, t, 0.7, 7);
 
     const c = this.cam.at(t);
     const end = smooth(clamp((t - 5.2) / 1.6));

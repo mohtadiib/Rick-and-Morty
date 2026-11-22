@@ -2,6 +2,7 @@ import '@fontsource/cairo/400.css';
 import '@fontsource/cairo/600.css';
 import '@fontsource/cairo/700.css';
 import '@fontsource/cairo/800.css';
+import './ui/fonts.css';
 import './ui/styles.css';
 import { Renderer } from './core/Renderer.js';
 import { AssetManager } from './core/AssetManager.js';

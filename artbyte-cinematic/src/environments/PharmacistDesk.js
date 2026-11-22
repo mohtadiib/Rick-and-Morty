@@ -96,7 +96,8 @@ export class PharmacistDesk {
     this.countStack.castShadow = true; this.countStack.receiveShadow = true; this.group.add(this.countStack);
 
     // dark-screen reflection (used for the "tired face in the monitor" shot)
-    this.mirror = new Reflector(new THREE.PlaneGeometry(0.56, 0.33), { textureWidth: 768, textureHeight: 452, color: 0x2a2a2a, clipBias: 0.003, multisample: 0 });
+    const darkGlass = { ...Reflector.ReflectorShader, fragmentShader: Reflector.ReflectorShader.fragmentShader.replace('gl_FragColor = vec4( blendOverlay( base.rgb, color ), 1.0 );', 'vec3 c = base.rgb * 0.42; float l = dot(c, vec3(0.299, 0.587, 0.114)); c = mix(vec3(l), c, 0.55) * vec3(0.92, 0.97, 1.05); gl_FragColor = vec4( c + 0.012, 1.0 );') };
+    this.mirror = new Reflector(new THREE.PlaneGeometry(0.56, 0.33), { textureWidth: 768, textureHeight: 452, color: 0x7f7f7f, clipBias: 0.003, multisample: 0, shader: darkGlass });
     this.mirror.position.set(4.3, H + 0.426, -3.38 + 0.0162); this.mirror.visible = false; this.group.add(this.mirror);
 
     this.chair = createOfficeChair();

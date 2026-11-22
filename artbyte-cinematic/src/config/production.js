@@ -27,8 +27,8 @@ export const PRODUCTION = {
     secondary: '#595959',
   },
   typography: {
-    // Al-Jazeera is preferred where licensed: drop the font files into public/assets/fonts
-    // and register them in src/ui/fonts.css, then change `family` below.
+    // Al-Jazeera is preferred where licensed: drop the font files into public/assets/fonts,
+    // uncomment the @font-face rules in src/ui/fonts.css, then change both families below.
     family: "'Cairo', 'Segoe UI', Tahoma, sans-serif",
     canvasFamily: 'Cairo',
   },

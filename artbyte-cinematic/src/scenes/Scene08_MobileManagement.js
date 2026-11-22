@@ -78,7 +78,7 @@ export class Scene08_MobileManagement extends SceneBase {
       const k = smooth((t - 6.0) / 2.6);
       const head = eye.clone();
       const f = new THREE.Vector3(Math.sin(0.5), 0, Math.cos(0.5)); const r = new THREE.Vector3(-Math.cos(0.5), 0, Math.sin(0.5));
-      const cam = head.clone().addScaledVector(f, -0.22 + 0.05 * k).addScaledVector(r, 0.34 - 0.04 * k).add(new THREE.Vector3(0, 0.1, 0));
+      const cam = head.clone().addScaledVector(f, -0.12 + 0.05 * k).addScaledVector(r, 0.44 - 0.04 * k).add(new THREE.Vector3(0, 0.08, 0));
       w.director.set({ pos: cam.toArray(), target: phoneP.toArray(), fov: 36, aperture: 0.003, focus: phoneP.toArray(), handheld: 0.35 });
     } else {
       const k = smooth((t - 8.6) / 3.1);

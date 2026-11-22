@@ -19,7 +19,7 @@ const outDir = args.out || 'renders/stills';
 fs.mkdirSync(outDir, { recursive: true });
 
 let server = null; let url = args.url;
-if (!url) { server = await createServer({ server: { port: +(args.port || 5199), host: '127.0.0.1' }, logLevel: 'error' }); await server.listen(); url = `http://127.0.0.1:${server.config.server.port}/`; }
+if (!url) { server = await createServer({ server: { port: +(args.port || 5199), host: '127.0.0.1', hmr: false, watch: null }, logLevel: 'error' }); await server.listen(); url = `http://127.0.0.1:${server.config.server.port}/`; }
 
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });

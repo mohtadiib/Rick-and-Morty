@@ -91,7 +91,7 @@ export class Scene03_AccountingNightmare extends SceneBase {
     }
     if (shot === 'reflection') { // chin resting on the left hand
       const cp = fromEye(ph, -0.01, -0.13, 0.07);
-      ph.state.armL = { target: wristFromSocket(cp, [0.15, 1, 0.1], [0, 0.3, 1]), fingers: [0.15, 1, 0.1], palm: [0, 0.3, 1], weight: 1, pose: 'relaxed' };
+      ph.state.armL = { target: wristFromSocket(cp, [0.3, 0.6, 0.6], [0, 0.85, -0.5]), fingers: [0.3, 0.6, 0.6], palm: [0, 0.85, -0.5], weight: 1, pose: 'grip' };
     }
     if (shot === 'count') {
       const i = Math.min(4, Math.floor((t - 12.6) / 0.27)); const bp = desk.countBoxPos[i].clone(); bp.y += 0.06; bp.z += 0.05;

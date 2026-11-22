@@ -226,8 +226,8 @@ export class Scene06_BatchLabelPrinting extends SceneBase {
       w.director.set({ pos: [tgt.x + d[0] + 0.03 * lt, tgt.y + d[1], tgt.z + d[2]], target: tgt.toArray(), fov: 28, aperture: 0.007, maxblur: 0.01, focus: tgt.toArray(), handheld: 0.4, seed: s.batch });
     } else if (shot === 'reveal') {
       const k = smooth((t - 25.5) / 1.8);
-      const x = 0.45 + 2.0 * k;
-      w.director.set({ pos: [x, 1.4, -2.62], target: [x + 0.34, 1.26, -3.19], fov: 38, aperture: 0.0035, focus: [x + 0.32, 1.3, -3.19], handheld: 0.25 });
+      const x = 0.45 + 2.0 * k; const ty = 1.1 + 0.3 * smooth(clamp((x - 1.2) / 0.6));
+      w.director.set({ pos: [x, ty + 0.24, -2.66], target: [x + 0.32, ty, -3.19], fov: 36, aperture: 0.0035, focus: [x + 0.3, ty, -3.19], handheld: 0.25 });
     } else {
       const k = smooth((t - 27.3) / 1.1);
       w.director.set({ pos: [3.85 - 0.2 * k, 1.75, -0.95 - 0.1 * k], target: [1.6, 1.25, -3.0], fov: 42, aperture: 0.0012, focus: [2.35, 1.5, -2.5], handheld: 0.25 });
