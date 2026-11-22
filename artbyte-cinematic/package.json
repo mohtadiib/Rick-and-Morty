@@ -1,0 +1,22 @@
+{
+  "name": "artbyte-cinematic",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ArtByte Pharmacy Management System – real-time cinematic 3D commercial (Three.js + GSAP)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "render": "node scripts/render-video.mjs",
+    "stills": "node scripts/render-stills.mjs"
+  },
+  "dependencies": {
+    "@fontsource/cairo": "5.3.0",
+    "gsap": "3.15.1",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.8"
+  }
+}
