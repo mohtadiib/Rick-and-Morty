@@ -61,7 +61,7 @@ export async function startStudio(params) {
   const cam = renderer.camera;
 
   function pose(name, t) {
-    const st = char.reset(); st.seed = char.name === 'pharmacist' ? 1 : 7;
+    const st = char.reset(); st.seed = { pharmacist: 1, customer: 7 }[char.name] ?? 20;
     st.face = { smile: 0.55, brows: 0.1, talk: 0, eyesClosed: 0, squint: 0 };
     const sh = (s) => char.shoulderWorld(s);
     char.update(t); // to get shoulder positions

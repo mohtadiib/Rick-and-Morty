@@ -173,4 +173,19 @@ export function bakeTexture(w, h, fn) {
   return t;
 }
 
+/** White embroidered-style text (transparent background) for chest logos. */
+export function textTexture(text, { color = '#ffffff', w = 512, h = 160, weight = 700 } = {}) {
+  return cached(`text-${text}-${color}`, () => {
+    const c = canvas(w, h); const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+    let size = h * 0.78; ctx.font = `${weight} ${size}px "Helvetica Neue", Arial, sans-serif`;
+    while (ctx.measureText(text).width > w * 0.94 && size > 10) { size -= 2; ctx.font = `${weight} ${size}px "Helvetica Neue", Arial, sans-serif`; }
+    ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.25)'; ctx.shadowBlur = 2; ctx.shadowOffsetY = 1;
+    ctx.fillText(text, w / 2, h / 2 + size * 0.04);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; t.needsUpdate = true;
+    return t;
+  });
+}
+
 export { fbm as fbm2, vnoise };

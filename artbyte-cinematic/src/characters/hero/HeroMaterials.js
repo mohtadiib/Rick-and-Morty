@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { skinNormalMap, weaveNormalMap, hairNormalMap, leatherNormalMap } from './HeroTextures.js';
+import { skinNormalMap, weaveNormalMap, hairNormalMap, leatherNormalMap, textTexture } from './HeroTextures.js';
 
 /**
  * Physically based material set for a hero character. `look` holds the palette; values follow the
@@ -13,6 +13,8 @@ export function createHeroMaterials(look) {
     roughness: 0.52, metalness: 0, sheen: 0.25, sheenColor: new THREE.Color(look.skinSheen ?? 0xb87b56), sheenRoughness: 0.7,
     specularIntensity: 0.45, normalScale: new THREE.Vector2(0.22, 0.22),
   };
+  const fabric = look.fabric || {}; // per-outfit tweaks of the outer garment
+  const coatColor = new THREE.Color(look.coat);
   const M = {
     skinColor: look.skin, palmColor: look.palm,
     // head skin carries a baked colour map (white base colour); body skin uses the flat colour
@@ -37,16 +39,22 @@ export function createHeroMaterials(look) {
     pad: new THREE.MeshPhysicalMaterial({ color: 0x9aa3a8, roughness: 0.2, transparent: true, opacity: 0.35, depthWrite: false }),
     // lenses: faint tint + additive glossy layer (keeps the eyes clearly readable behind them)
     lens: new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.1, metalness: 0, ior: 1.6, specularIntensity: 0.9, reflectivity: 0.9, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
-    coat: new THREE.MeshPhysicalMaterial({ color: look.coat, roughness: 0.82, sheen: 0.35, sheenColor: new THREE.Color(0x8d9096), sheenRoughness: 0.8, normalMap: rep(weave, 36, 30), normalScale: new THREE.Vector2(0.28, 0.28), side: THREE.DoubleSide }),
+    coat: new THREE.MeshPhysicalMaterial({ color: look.coat, roughness: fabric.roughness ?? 0.82, sheen: fabric.sheen ?? 0.35, sheenColor: new THREE.Color(fabric.sheenColor ?? 0x8d9096), sheenRoughness: 0.8, specularIntensity: fabric.specular ?? 1, normalMap: rep(weave, 36, 30), normalScale: new THREE.Vector2(0.28, 0.28), side: THREE.DoubleSide }),
     coatButton: new THREE.MeshPhysicalMaterial({ color: 0xf2f2ee, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.2 }),
     buttonhole: new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.8 }),
-    shirt: new THREE.MeshPhysicalMaterial({ color: look.shirt, roughness: 0.78, sheen: 0.25, sheenColor: new THREE.Color(0xe6f0ff), sheenRoughness: 0.7, normalMap: rep(weave, 30, 26), normalScale: new THREE.Vector2(0.22, 0.22), side: THREE.DoubleSide }),
+    shirt: new THREE.MeshPhysicalMaterial({ color: look.shirt, roughness: 0.78, specularIntensity: fabric.specular ?? 1, sheen: 0.25, sheenColor: new THREE.Color(0xe6f0ff), sheenRoughness: 0.7, normalMap: rep(weave, 30, 26), normalScale: new THREE.Vector2(0.22, 0.22), side: THREE.DoubleSide }),
     shirtButton: new THREE.MeshPhysicalMaterial({ color: 0xf7f5ef, roughness: 0.25, clearcoat: 0.8, sheen: 0.3 }),
-    trousers: new THREE.MeshPhysicalMaterial({ color: look.trousers, roughness: 0.85, sheen: 0.3, sheenColor: new THREE.Color(0x46557a), sheenRoughness: 0.75, normalMap: rep(twill, 26, 40), normalScale: new THREE.Vector2(0.3, 0.3) }),
+    trousers: new THREE.MeshPhysicalMaterial({ color: look.trousers, roughness: 0.85, specularIntensity: fabric.specular ?? 1, sheen: 0.3, sheenColor: new THREE.Color(0x46557a), sheenRoughness: 0.75, normalMap: rep(twill, 26, 40), normalScale: new THREE.Vector2(0.3, 0.3) }),
     shoe: new THREE.MeshPhysicalMaterial({ color: look.shoes, roughness: 0.34, metalness: 0.08, clearcoat: 0.22, clearcoatRoughness: 0.35, normalMap: leatherNormalMap(), normalScale: new THREE.Vector2(0.15, 0.15) }),
     sole: new THREE.MeshStandardMaterial({ color: 0x121315, roughness: 0.82 }),
     lace: new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.7 }),
     belt: new THREE.MeshPhysicalMaterial({ color: 0x15171c, roughness: 0.4, clearcoat: 0.2 }),
+    seam: new THREE.MeshStandardMaterial({ color: coatColor.clone().multiplyScalar(0.42), roughness: 0.9 }),
+    tipping: new THREE.MeshPhysicalMaterial({ color: look.trim ?? 0xf4f5f7, roughness: 0.6, sheen: 0.3 }),
+    logoText: look.logoText ? new THREE.MeshStandardMaterial({ map: textTexture(look.logoText), transparent: true, alphaTest: 0.35, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }) : null,
+    hijab: look.hijab ? new THREE.MeshPhysicalMaterial({ color: look.hijab, roughness: 0.88, specularIntensity: 0.3, sheen: 0.35, sheenColor: new THREE.Color(look.hijab), sheenRoughness: 0.6, normalMap: rep(weave, 14, 14), normalScale: new THREE.Vector2(0.18, 0.18), side: THREE.DoubleSide }) : null,
+    sneakerMid: new THREE.MeshPhysicalMaterial({ color: look.sneakerMid ?? 0x9fa3aa, roughness: 0.6 }),
+    shoeFlat: new THREE.MeshPhysicalMaterial({ color: look.shoes, roughness: 0.4, clearcoat: 0.25, clearcoatRoughness: 0.4, side: THREE.DoubleSide }),
   };
   return M;
 }

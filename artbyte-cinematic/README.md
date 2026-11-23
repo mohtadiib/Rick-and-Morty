@@ -173,10 +173,26 @@ gaze (neck + head + eyes), deterministic blinking, expressions (`face.smile / br
 squint / eyesClosed`), a distance-locked gait and a sitting posture. Scenes only ever write
 `char.state` and call `char.update(t)`, so visuals can be upgraded without touching choreography.
 
-### The pharmacist – high-detail build (`characters/hero/`)
+### High-detail cast (`characters/hero/`)
 
-The point-of-view character is a `HeroCharacter`: same rig and API, new visuals, matched to the
-supplied character sheet (`public/assets/style-reference/pharmacist-reference.jpg`).
+Every character is a `HeroCharacter`: same rig and API as before, new visuals matched to the supplied
+character sheets in `public/assets/style-reference/`:
+
+| Character | Build |
+|---|---|
+| Pharmacist | lab coat over an open-neck blue shirt, navy trousers, oxfords, round glasses, short fade + trimmed beard (`pharmacist-reference.jpg`) |
+| Customer | cream hijab (face-framing head part, wrapped neck cowl, shoulder drape, hanging tail), long green A-line dress with gathered cuffs, flats (`customer-reference.jpg`) |
+| ArtByte lead | royal-blue work jacket – concealed placket, polo collar and ribbed cuffs with white tipping, ribbed hem band, welt pockets, white “ArtByte” chest logo – charcoal trousers, sneakers, fade + short beard (`artbyte-jacket-reference.jpg`) |
+| ArtByte engineer | open fitted blue blazer (notched collar, lapels, cutaway fronts, flap pockets, chest logo) over a white top, navy trousers, flats, braids gathered in a bun (`artbyte-blazer-reference.jpg`) |
+| ArtByte support | the team jacket, short curly hair, clean-shaven |
+
+Each look is data (`look` in `Pharmacist.js`, `Customer.js`, `ArtByteEmployee.js`): skin, palm and
+lip tones, hair style (`short` · `curly` · `braids` · `hijab`), beard (`full` · `short` · none),
+face sculpt overrides, head scale, outfit (`labcoat` · `jacket` · `blazer` · `dress`, optional
+`hijab`), shoe style (`oxford` · `sneaker` · `flat`) and fabric colours/sheen. Male and female faces
+use separate sculpt presets (`FACE_MALE` / `FACE_FEMALE` in `HeroHead.js`).
+
+The pharmacist in detail:
 
 | Part | How it is built |
 |---|---|
@@ -196,18 +212,15 @@ supplied character sheet (`public/assets/style-reference/pharmacist-reference.jp
 early) instead of all fingers moving in lockstep. Relaxed hands carry a subtle, deterministic
 micro-motion; grips, pinches and pointing stay exact so props never drift.
 
-**Look-development studio.** `/?studio=pharmacist` opens a neutral grey cyclorama with
+**Look-development studio.** `/?studio=pharmacist` (or `customer`, `artbyte-0`, `artbyte-1`, `artbyte-2`) opens a neutral grey cyclorama with
 photographic lighting (drag to orbit, keys 1–7 for shots, `p` cycles poses: relaxed, A-pose,
-walk, sit, reach, pinch, point). `npm run studio -- --shots shots.json` renders a turnaround,
+walk, sit, reach, pinch, point). `npm run studio -- --who customer --shots shots.json` renders a turnaround,
 close-ups or any list of `{cam, pose, face, orbit}` shots for comparison with the reference.
 
 **Image-to-3D generators (e.g. TRELLIS).** Such models output a single static, un-rigged mesh
 and need a large CUDA GPU, so they can't drive this cast directly. A generated GLB is still useful
 as a modelling reference or for background props, via `AssetManager.loadGLB`. The animated
 characters need the skinned rig above.
-
-The customer and the three ArtByte employees still use the stylised build; they can move to the
-hero pipeline by giving `HeroCharacter` their own `look` palette and clothing builders.
 
 ## 8. Content rules followed
 
@@ -236,4 +249,3 @@ hero pipeline by giving `HeroCharacter` their own `look` palette and clothing bu
 * Supplying desktop screenshots, plus the customers, suppliers and profit & loss screens, would
   replace the presentation frame and the placeholders.
 * Rendering at 1080p/ultra needs a GPU; software GL is fine for previews and stills.
-* Next character pass: bring the customer and the ArtByte team onto the hero pipeline.

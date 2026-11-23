@@ -27,8 +27,9 @@ export class HeroCharacter extends Character {
     const look = spec.look;
     this.heroHead = new HeroHead({
       skinColor: look.skin, hairColor: look.hair, beardColor: look.beard, irisColor: look.iris, lipColor: look.lips, glasses: !!look.glasses,
+      hair: look.hairStyle || 'short', beard: look.beardStyle === undefined ? 'full' : look.beardStyle, female: spec.body === 'f', face: look.face,
     }, M);
-    this.heroHead.group.position.y = 0.1; this.head.add(this.heroHead.group);
+    this.heroHead.group.position.y = 0.1 - (look.headDrop ?? 0); this.heroHead.group.scale.setScalar(look.headScale ?? 1); this.head.add(this.heroHead.group);
     this.headGeo = this.heroHead.group;
 
     // four coat-skirt panel bones (front/back × left/right), driven from the legs each frame
@@ -37,7 +38,7 @@ export class HeroCharacter extends Character {
 
     // bind pose = the neutral standing pose of the rig (arms hanging, no breathing offset)
     const st = this.state; st.breathe = 0; this.update(0);
-    this.body = buildHeroBody(this, M);
+    this.body = buildHeroBody(this, M, look.outfit || { kind: 'labcoat' });
     [1, -1].forEach((s) => this.arms[s].hand.bind(this.arms[s].fore));
     this.state = this.defaultState(); this.state.seed = st.seed;
     this.neckMesh = this.body.meshes.neck;
