@@ -26,6 +26,7 @@ import { createScenes } from './scenes/index.js';
  *   ?t=93.5             start at a time (seconds)   ?scene=batch-label-printing  start at a scene
  *   ?aspect=9:16        vertical framing preview
  *   ?render=1&width=1920&height=1080   offline frame renderer (used by scripts/render-*.mjs)
+ *   ?studio=pharmacist  character look-development studio (orbit with the mouse, keys 1–7 shots, p poses)
  */
 const params = new URLSearchParams(location.search);
 const RENDER = params.has('render');
@@ -153,6 +154,12 @@ class App {
   }
 }
 
-const app = new App();
-window.__app = app;
-app.init().catch((e) => { console.error(e); const t = document.querySelector('.loader-text'); if (t) t.textContent = 'Error: ' + e.message; window.__ARTBYTE_ERROR__ = String(e && e.stack || e); });
+const fail = (e) => { console.error(e); const t = document.querySelector('.loader-text'); if (t) t.textContent = 'Error: ' + e.message; window.__ARTBYTE_ERROR__ = String(e && e.stack || e); };
+if (params.has('studio')) {
+  // character look-development studio (see src/dev/CharacterStudio.js)
+  import('./dev/CharacterStudio.js').then((m) => m.startStudio(params)).catch(fail);
+} else {
+  const app = new App();
+  window.__app = app;
+  app.init().catch(fail);
+}

@@ -98,7 +98,64 @@ export class Character {
     this.spec = spec;
     this.name = spec.name;
     this.root = new THREE.Group(); this.root.name = `char-${spec.name}`;
-    const M = (this.mats = {
+    const M = (this.mats = this._createMaterials(spec));
+    const s = spec.scale ?? 1;
+    this.root.scale.setScalar(s);
+    this.scale = s;
+
+    // ---------- skeleton (THREE.Bone nodes so meshes can be skinned to them) ----------
+    const bone = (name) => { const b = new THREE.Bone(); b.name = name; return b; };
+    this.hips = bone('hips'); this.root.add(this.hips);
+    this.spine = bone('torso'); this.spine.position.y = 0.1; this.hips.add(this.spine);
+    this.chest = bone('chest'); this.chest.position.y = 0.2; this.spine.add(this.chest);
+    this.neck = bone('neck'); this.neck.position.y = 0.205; this.chest.add(this.neck);
+    this.head = bone('head'); this.head.position.y = 0.085; this.neck.add(this.head);
+
+    const female = spec.body === 'f';
+    const shW = female ? 0.162 : 0.178;
+    this.shoulderW = shW;
+    this.female = female;
+
+    // ---------- arms ----------
+    this.arms = {};
+    [1, -1].forEach((side) => {
+      const p = side > 0 ? 'left' : 'right';
+      const sh = bone(`${p}Shoulder`); sh.position.set(side * (shW - 0.012), 0.152, -0.004); this.chest.add(sh);
+      const upper = bone(`${p}Arm`); sh.add(upper);
+      const fore = bone(`${p}Forearm`); fore.position.y = -L_UPPER; upper.add(fore);
+      const wrist = bone(`${p}Hand`); wrist.position.y = -L_FORE; fore.add(wrist);
+      const hand = this._createHand(side, M, spec); wrist.add(hand.group);
+      this.arms[side] = { side, shoulder: sh, upper, fore, wrist, hand };
+    });
+
+    // ---------- legs ----------
+    this.legs = {};
+    [1, -1].forEach((side) => {
+      const p = side > 0 ? 'left' : 'right';
+      const thigh = bone(`${p}Thigh`); thigh.position.set(side * 0.092, -0.02, 0); this.hips.add(thigh);
+      const shin = bone(`${p}Shin`); shin.position.y = -L_THIGH; thigh.add(shin);
+      const foot = bone(`${p}Foot`); foot.position.y = -L_SHIN; shin.add(foot);
+      this.legs[side] = { side, thigh, shin, foot };
+    });
+
+    /** Named joint map (aliases of the rig nodes above). */
+    this.joints = {
+      hips: this.hips, torso: this.spine, chest: this.chest, neck: this.neck, head: this.head,
+      leftShoulder: this.arms[1].shoulder, leftArm: this.arms[1].upper, leftForearm: this.arms[1].fore, leftHand: this.arms[1].wrist,
+      rightShoulder: this.arms[-1].shoulder, rightArm: this.arms[-1].upper, rightForearm: this.arms[-1].fore, rightHand: this.arms[-1].wrist,
+      leftThigh: this.legs[1].thigh, leftShin: this.legs[1].shin, leftFoot: this.legs[1].foot,
+      rightThigh: this.legs[-1].thigh, rightShin: this.legs[-1].shin, rightFoot: this.legs[-1].foot,
+    };
+
+    this.state = this.defaultState();
+    this.eye = new THREE.Object3D(); this.eye.position.set(0, 0.1, 0.085); this.head.add(this.eye);
+
+    this._buildVisuals(spec, M);
+    this.root.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+  }
+
+  _createMaterials(spec) {
+    return {
       skin: new THREE.MeshStandardMaterial({ color: spec.skin, roughness: 0.62, metalness: 0 }),
       top: new THREE.MeshStandardMaterial({ color: spec.top, roughness: 0.82 }),
       sleeve: new THREE.MeshStandardMaterial({ color: spec.sleeve ?? spec.top, roughness: 0.82 }),
@@ -114,21 +171,14 @@ export class Character {
       brow: new THREE.MeshStandardMaterial({ color: spec.browColor ?? spec.hairColor ?? 0x1a1410, roughness: 0.8 }),
       frame: new THREE.MeshStandardMaterial({ color: 0x1c1c1e, roughness: 0.3, metalness: 0.6 }),
       lens: new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, roughness: 0.02, depthWrite: false }),
-    });
-    const s = spec.scale ?? 1;
-    this.root.scale.setScalar(s);
-    this.scale = s;
+    };
+  }
 
-    // ---------- skeleton ----------
-    this.hips = new THREE.Group(); this.root.add(this.hips);
-    this.spine = new THREE.Group(); this.spine.position.y = 0.1; this.hips.add(this.spine);
-    this.chest = new THREE.Group(); this.chest.position.y = 0.2; this.spine.add(this.chest);
-    this.neck = new THREE.Group(); this.neck.position.y = 0.205; this.chest.add(this.neck);
-    this.head = new THREE.Group(); this.head.position.y = 0.085; this.neck.add(this.head);
+  _createHand(side, M) { return new Hand(side, M.skin); }
 
-    const female = spec.body === 'f';
-    const shW = female ? 0.162 : 0.178;
-    this.shoulderW = shW;
+  /** Stylised segment meshes (default cast). Subclasses replace this with their own visuals. */
+  _buildVisuals(spec, M) {
+    const female = this.female;
     // pelvis (trousers)
     const pelvis = new THREE.Mesh(bodyGeometry(female
       ? [[-0.12, 0.1, 0.08, 2.2], [-0.07, 0.158, 0.112, 2.4], [0.0, 0.168, 0.118, 2.4], [0.06, 0.152, 0.108, 2.3], [0.1, 0.142, 0.1, 2.2]]
@@ -151,14 +201,10 @@ export class Character {
     this._buildClothingDetails(spec, M);
     this._buildHead(spec, M);
 
-    // ---------- arms ----------
-    this.arms = {};
     [1, -1].forEach((side) => {
-      const sh = new THREE.Group(); sh.position.set(side * (shW - 0.012), 0.152, -0.004); this.chest.add(sh);
-      const upper = new THREE.Group(); sh.add(upper);
+      const { upper, fore } = this.arms[side];
       const um = new THREE.Mesh(bodyGeometry([[0.045, 0.02, 0.02, 2], [0.03, 0.045, 0.047, 2], [0.0, 0.054, 0.054, 2], [-0.06, 0.052, 0.05, 2], [-0.16, 0.047, 0.045, 2], [-0.25, 0.041, 0.04, 2], [-L_UPPER, 0.038, 0.037, 2], [-L_UPPER - 0.02, 0.02, 0.02, 2]], 20, 3), M.sleeve);
       um.castShadow = true; upper.add(um);
-      const fore = new THREE.Group(); fore.position.y = -L_UPPER; upper.add(fore);
       const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.039, 14, 10), M.sleeve); fore.add(elbow);
       const fm = new THREE.Mesh(bodyGeometry([[0.0, 0.04, 0.039, 2], [-0.06, 0.041, 0.038, 2], [-0.16, 0.037, 0.033, 2], [-L_FORE + 0.02, 0.033, 0.03, 2], [-L_FORE + 0.005, 0.03, 0.027, 2]], 20, 3), spec.shortSleeves ? M.skin : M.sleeve);
       fm.castShadow = true; fore.add(fm);
@@ -166,34 +212,22 @@ export class Character {
         const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.0385, 0.0385, 0.03, 14), spec.cuff ? new THREE.MeshStandardMaterial({ color: spec.cuff, roughness: 0.7 }) : M.sleeve);
         cuff.position.y = -L_FORE + 0.03; fore.add(cuff);
       }
-      const wrist = new THREE.Group(); wrist.position.y = -L_FORE; fore.add(wrist);
-      const hand = new Hand(side, M.skin); wrist.add(hand.group);
-      this.arms[side] = { side, shoulder: sh, upper, fore, wrist, hand };
     });
 
-    // ---------- legs ----------
-    this.legs = {};
     [1, -1].forEach((side) => {
-      const thigh = new THREE.Group(); thigh.position.set(side * 0.092, -0.02, 0); this.hips.add(thigh);
+      const { thigh, shin, foot } = this.legs[side];
       const tm = cap(0.072, L_THIGH - 0.1, M.pants); tm.position.y = -L_THIGH / 2; thigh.add(tm);
-      const shin = new THREE.Group(); shin.position.y = -L_THIGH; thigh.add(shin);
       const knee = new THREE.Mesh(new THREE.SphereGeometry(0.058, 12, 8), M.pants); shin.add(knee);
       const sm = cap(0.055, L_SHIN - 0.09, M.pants); sm.position.y = -L_SHIN / 2; shin.add(sm);
-      const foot = new THREE.Group(); foot.position.y = -L_SHIN; shin.add(foot);
       const ankle = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), M.shoes); ankle.position.y = -0.025; foot.add(ankle);
       const shoe = new THREE.Mesh(new THREE.CapsuleGeometry(0.045, 0.16, 6, 12), M.shoes);
       shoe.rotation.x = Math.PI / 2; shoe.scale.set(1.05, 1, 0.75); shoe.position.set(0, -0.045, 0.06); shoe.castShadow = true; foot.add(shoe);
       const sole = new THREE.Mesh(new THREE.BoxGeometry(0.092, 0.012, 0.27), new THREE.MeshStandardMaterial({ color: 0x18140f, roughness: 0.9 }));
       sole.position.set(0, -FOOT_H + 0.006, 0.055); foot.add(sole);
-      this.legs[side] = { side, thigh, shin, foot };
     });
 
     if (spec.dress) this._buildDress(spec, M);
     if (spec.coat) this._buildCoatTails(spec, M);
-
-    this.state = this.defaultState();
-    this.eye = new THREE.Object3D(); this.eye.position.set(0, 0.1, 0.085); this.head.add(this.eye);
-    this.root.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
   }
 
   defaultState() {
@@ -395,16 +429,36 @@ export class Character {
     this._updateFace(time);
 
     // arms
-    [1, -1].forEach((side) => this._solveArm(side, side > 0 ? st.armL : st.armR, side > 0 ? st.handL : st.handR, sit, walkAmt, ph));
+    [1, -1].forEach((side) => this._solveArm(side, side > 0 ? st.armL : st.armR, side > 0 ? st.handL : st.handR, sit, walkAmt, ph, time));
 
+    this._afterPose(time, { sit, walkAmt, ph });
     // first-person: hide head geometry so the camera can sit at the eyes
-    this.headGeo.visible = !st.firstPerson;
-    this.neckMesh.visible = !st.firstPerson;
-    this.chestDetails.visible = !st.firstPerson;
-    if (this.scarfDrape) this.scarfDrape.visible = !st.firstPerson;
+    this._setFirstPerson(st.firstPerson);
   }
 
-  _solveArm(side, arm, handPose, sit, walkAmt, ph) {
+  /** Hook for secondary motion after the pose is solved (clothing, fingers…). */
+  _afterPose() {}
+
+  _setFirstPerson(fp) {
+    this.headGeo.visible = !fp;
+    this.neckMesh.visible = !fp;
+    this.chestDetails.visible = !fp;
+    if (this.scarfDrape) this.scarfDrape.visible = !fp;
+  }
+
+  /** Free GPU resources (geometries, materials, textures, skeletons). */
+  dispose() {
+    const seen = new Set();
+    this.root.traverse((o) => {
+      if (o.geometry && !seen.has(o.geometry)) { seen.add(o.geometry); o.geometry.dispose(); }
+      const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+      mats.forEach((m) => { if (seen.has(m)) return; seen.add(m); for (const k in m) if (m[k] && m[k].isTexture && !seen.has(m[k])) { seen.add(m[k]); m[k].dispose(); } m.dispose(); });
+      if (o.isSkinnedMesh && o.skeleton && !seen.has(o.skeleton)) { seen.add(o.skeleton); o.skeleton.dispose(); }
+    });
+    this.root.removeFromParent();
+  }
+
+  _solveArm(side, arm, handPose, sit, walkAmt, ph, time = 0) {
     const A = this.arms[side];
     const S = A.shoulder.getWorldPosition(new THREE.Vector3());
     const up = new THREE.Vector3(0, 1, 0);
@@ -443,6 +497,7 @@ export class Character {
     // fingers
     const pose = arm && w > 0.01 && arm.pose ? blendPose(handPose, arm.pose, w) : handPose;
     A.hand.setPose(pose || 'relaxed');
+    if (A.hand.animate) A.hand.animate(time, this.state.seed);
     void up;
   }
 

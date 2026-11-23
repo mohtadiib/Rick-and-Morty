@@ -116,7 +116,7 @@ npm run render -- --no-sfx                                # narration only
 ```
 artbyte-cinematic/
 ├── public/assets/      screenshots · branding · audio (narration) · fonts · models · style-reference
-├── scripts/            render-video.mjs (offline MP4) · render-stills.mjs (frames)
+├── scripts/            render-video.mjs (offline MP4) · render-stills.mjs (frames) · render-studio.mjs (character look-dev)
 └── src/
     ├── main.js         bootstrap, URL modes, render API for the offline renderer
     ├── config/         production.js · scenes.js (timing) · assets.js (screens) · quality.js · storyData.js
@@ -127,6 +127,9 @@ artbyte-cinematic/
     ├── environments/   PharmacyEnvironment · PharmacyShelves · PharmacyCounter · PharmacistDesk · OfficeEnvironment
     ├── characters/     CharacterController (rig, IK, face, gait) · HandController · Locomotion
     │                   Pharmacist · Customer · ArtByteEmployee
+    │   └── hero/       HeroCharacter · HeroBody (skinned body + clothing) · HeroHead · HeroHand
+    │                   HeroMaterials · HeroTextures (procedural maps) · HeroGeometry (toolkit)
+    ├── dev/            CharacterStudio (?studio=… look-development stage)
     ├── objects/        MedicineBox (atlas + hero boxes) · ThermalPrinter · BatchLabel (peelable sticker)
     │                   Barcode (Code 128) · Devices (monitor/laptop/phone/tablet) · Documents · WallClock · textures
     ├── scenes/         SceneBase · helpers (ArmTrack, gait, first-person) · Scene01…Scene10 · index
@@ -162,25 +165,49 @@ artbyte-cinematic/
 
 ## 7. Characters
 
-The cast is **procedural** (no rigged GLB was supplied and none can be fetched from this
-environment). Each character has a full joint hierarchy, analytic two-bone arm IK, articulated
-hands (4 fingers × 3 phalanges + thumb, pose blending: relaxed, grip, pinch, point, pen, shake…),
-gaze (neck + head + eyes), deterministic blinking, expressions (brows, smile, talking mouth),
-a distance-locked gait and a sitting posture. Bodies are sculpted from super-elliptic
-cross-sections.
+The cast is **procedural** (no rigged GLB was supplied). Every character shares one rig
+(`CharacterController`): a named bone hierarchy (`hips, torso, chest, neck, head,
+left/rightShoulder, left/rightArm, left/rightForearm, left/rightHand, left/rightThigh,
+left/rightShin, left/rightFoot` – also available as `char.joints`), analytic two-bone arm IK,
+gaze (neck + head + eyes), deterministic blinking, expressions (`face.smile / brows / talk /
+squint / eyesClosed`), a distance-locked gait and a sitting posture. Scenes only ever write
+`char.state` and call `char.update(t)`, so visuals can be upgraded without touching choreography.
 
-Art direction follows the illustration references you supplied (in
-`public/assets/style-reference/`): clean shapes and a bold palette for the people, placed in a
-physically lit pharmacy. The pharmacist (white coat, glasses, beard), the customer (teal dress,
-saffron headscarf) and the three ArtByte employees (blue uniforms, logo badge) keep the same
-identity in every scene.
+### The pharmacist – high-detail build (`characters/hero/`)
 
-*Swapping in GLB characters* is possible but not plug-and-play: every pose is solved per frame
-from the scene data (`char.state`), so a skinned model needs a small adapter that maps the
-procedural joints (hips, spine, chest, neck, head, upper/fore arm, wrist, fingers, thigh, shin,
-foot) onto its skeleton. AnimationMixer clips could then drive idle/walk layers under the IK.
+The point-of-view character is a `HeroCharacter`: same rig and API, new visuals, matched to the
+supplied character sheet (`public/assets/style-reference/pharmacist-reference.jpg`).
 
----
+| Part | How it is built |
+|---|---|
+| Body | One skinned skeleton. Torso, neck, sleeves and trouser legs are continuous lofted surfaces with smooth weights across shoulders, elbows, hips and knees (no ball joints, no gaps). Bound in the rig's neutral standing pose. |
+| Lab coat | Off-white cotton (`#F3F5F7`, sheen, woven normal map). Open front with a clean gap, notched collar that rolls onto the shoulders, lapels with rolled edges, chest pocket and two hip patch pockets with welts, three buttons on the right front and buttonholes on the left, set-in sleeves ending above the wrist. The mid-thigh skirt rides on four panel bones (front/back × left/right): it follows the legs when walking and lies on the lap when seated. |
+| Shirt | Sky blue (`#A6C6E6`-family). Open V-neck, collar stand with points resting on the chest, button placket with pearl buttons, cuffs showing under the coat sleeves, tucked into the waistband. |
+| Trousers | Deep navy twill (`#1B2438`), waistband with belt loops, straight legs with pressed front/back creases and a slight break over the shoes. |
+| Shoes | Cap-toe oxfords (`#1E2024`, clearcoat leather): upper, welt/sole, stacked heel, laces, eyestay and toe-cap seams. Soles touch the floor standing and seated. |
+| Head | Sculpted lat-long surface with resolution concentrated on the face: brow ridge, eye sockets, nose bridge/tip/alae/nostrils, cheekbones, muzzle, chin, jaw angle and a defined jawline. Skin is `MeshPhysicalMaterial` (`#8C5A3C`, roughness 0.52, sheen 0.25 `#B87B56`) with a pore normal map and a baked colour map (socket shading, warm mid-face, beard shadow, hairline fade). |
+| Eyes | Textured eyeballs (radial iris fibres, limbal ring, collarette, veins), additive glossy cornea for catch-lights, gaze tracking toward `state.look`, upper/lower lids with lash line and crease, automatic blinks, squint and smile-narrowing. |
+| Brows, mouth | Bold tapered brows that raise, frown and knit. Lips rebuilt every frame from `smile` / `talk` (corners, parting, mouth interior, teeth). |
+| Hair, beard | Short crop with a rounded hairline and side/temple fade; full trimmed beard + moustache that follows the jaw and frames the mouth. Both are shells grown from the skull with a curl normal map, matte black (`#161618` / `#18181A`). |
+| Glasses | Round gunmetal rims (`#222428`, metalness 0.75), keyhole bridge, nose pads on arms, hinges, temple arms that follow the side of the head and hook over the ears, curved reflective lenses. |
+| Hands | `HeroHand`: one seamless skinned mesh – sculpted palm (thenar/hypothenar pads, palm hollow, knuckles), four fingers and a thumb that bend smoothly at every joint, lighter palms and finger pads, fingernails, wrist skin that blends into the forearm. Same sockets as before, so every held prop still lands in the right place. |
+
+**Hand movement.** Pose changes now roll through the fingers (index leads, pinky trails, thumb
+early) instead of all fingers moving in lockstep. Relaxed hands carry a subtle, deterministic
+micro-motion; grips, pinches and pointing stay exact so props never drift.
+
+**Look-development studio.** `/?studio=pharmacist` opens a neutral grey cyclorama with
+photographic lighting (drag to orbit, keys 1–7 for shots, `p` cycles poses: relaxed, A-pose,
+walk, sit, reach, pinch, point). `npm run studio -- --shots shots.json` renders a turnaround,
+close-ups or any list of `{cam, pose, face, orbit}` shots for comparison with the reference.
+
+**Image-to-3D generators (e.g. TRELLIS).** Such models output a single static, un-rigged mesh
+and need a large CUDA GPU, so they can't drive this cast directly. A generated GLB is still useful
+as a modelling reference or for background props, via `AssetManager.loadGLB`. The animated
+characters need the skinned rig above.
+
+The customer and the three ArtByte employees still use the stylised build; they can move to the
+hero pipeline by giving `HeroCharacter` their own `look` palette and clothing builders.
 
 ## 8. Content rules followed
 
@@ -209,3 +236,4 @@ foot) onto its skeleton. AnimationMixer clips could then drive idle/walk layers 
 * Supplying desktop screenshots, plus the customers, suppliers and profit & loss screens, would
   replace the presentation frame and the placeholders.
 * Rendering at 1080p/ultra needs a GPU; software GL is fine for previews and stills.
+* Next character pass: bring the customer and the ArtByte team onto the hero pipeline.

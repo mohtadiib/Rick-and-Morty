@@ -127,7 +127,7 @@ export class Scene03_AccountingNightmare extends SceneBase {
     } else if (shot === 'calc') {
       const c = desk.calculator.group.position; const k = (t - (t < 10 ? 7.4 : 14)) / 1.4;
       ph.state.look = new THREE.Vector3(c.x, c.y, c.z);
-      w.director.set({ pos: [c.x - 0.12 + k * 0.03, c.y + 0.2, c.z + 0.2], target: [c.x, c.y + 0.01, c.z - 0.02], fov: 32, aperture: 0.006, focus: [c.x, c.y + 0.015, c.z - 0.01], maxblur: 0.01, handheld: 0.8, seed: 2 });
+      w.director.set({ pos: [c.x - 0.21 + k * 0.03, c.y + 0.21, c.z + 0.1], target: [c.x, c.y + 0.01, c.z - 0.02], fov: 32, aperture: 0.006, focus: [c.x, c.y + 0.015, c.z - 0.01], maxblur: 0.01, handheld: 0.8, seed: 2 });
     } else if (shot === 'notebook') {
       const pw = desk.notebook.penWorld(); const k = (t - 8.8) / 1.4;
       ph.state.look = pw.clone();

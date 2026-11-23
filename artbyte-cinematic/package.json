@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "render": "node scripts/render-video.mjs",
-    "stills": "node scripts/render-stills.mjs"
+    "stills": "node scripts/render-stills.mjs",
+    "studio": "node scripts/render-studio.mjs"
   },
   "dependencies": {
     "@fontsource/cairo": "5.3.0",
