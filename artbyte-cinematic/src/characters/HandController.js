@@ -23,8 +23,14 @@ export const HAND_POSES = {
   point: { curl: [0.04, 1.4, 1.45, 1.4], thumb: [0.7, 0.4, 0.3], spread: 0.0 },
   pen: { curl: [0.55, 0.75, 1.2, 1.3], thumb: [0.8, 0.35, 0.25], spread: 0.0 },
   shake: { curl: [0.55, 0.6, 0.62, 0.66], thumb: [0.3, 0.15, 0.1], spread: 0.02 },
-  phone: { curl: [0.55, 0.65, 0.7, 0.75], thumb: [0.2, 0.15, 0.1], spread: 0.03 },
+  // holding a sheet of paper up: fingers nearly straight behind the sheet, thumb pressing on its front
+  // (thumbRot: explicit thumb joint rotations, used by the high-detail hand; y/z mirror per side)
+  sheet: { curl: [0.16, 0.2, 0.24, 0.3], profile: [1, 0.8, 0.5], indexCurl: [0.22, 0.18, 0.1], thumb: [0.95, 0.15, 0.1], thumbRot: [[-0.7, 0, 0], [0.15, 0, 0], [0.25, 0, 0]], spread: 0.03 },
+  // cradling a phone: fingers lie along the back and bend sharply at the middle joint around the side edge
+  phone: { curl: [1.0, 1.05, 1.1, 1.15], profile: [0.3, 1.3, 0.4], indexCurl: [0.28, 1.25, 0.4], thumb: [-0.2, 0.1, 0.1], spread: 0.02 },
 };
+/** Default share of a finger's curl at the knuckle / middle / end joint (a pose may override with `profile`). */
+export const CURL_PROFILE = [1, 1.1, 0.8];
 
 export class Hand {
   constructor(side, skinMat) {
@@ -73,21 +79,21 @@ export class Hand {
   setPose(pose, w = 1) {
     let blend = typeof pose === 'string' ? { [pose]: 1 } : pose;
     if (typeof pose === 'string' && w < 1) blend = { relaxed: 1 - w, [pose]: w };
-    const curl = [0, 0, 0, 0]; const thumb = [0, 0, 0]; let spread = 0; const indexCurl = [0, 0, 0]; let hasIndex = 0; let total = 0;
+    const joint = [0, 1, 2, 3].map(() => [0, 0, 0]); const thumb = [0, 0, 0]; let spread = 0; const indexCurl = [0, 0, 0]; let hasIndex = 0; let total = 0;
     for (const [name, wt] of Object.entries(blend)) {
       const p = HAND_POSES[name]; if (!p || wt <= 0) continue; total += wt;
-      p.curl.forEach((c, i) => (curl[i] += c * wt));
+      const prof = p.profile || CURL_PROFILE;
+      p.curl.forEach((c, i) => prof.forEach((m, k) => (joint[i][k] += c * m * wt)));
       p.thumb.forEach((c, i) => (thumb[i] += c * wt));
       spread += p.spread * wt;
       const ic = p.indexCurl || [p.curl[0], p.curl[0] * 0.9, p.curl[0] * 0.7];
       ic.forEach((c, i) => (indexCurl[i] += c * wt)); hasIndex += wt;
     }
     if (total <= 0) return;
-    curl.forEach((c, i) => (curl[i] = c / total)); thumb.forEach((c, i) => (thumb[i] = c / total)); spread /= total; indexCurl.forEach((c, i) => (indexCurl[i] = c / total));
+    thumb.forEach((c, i) => (thumb[i] = c / total)); spread /= total; indexCurl.forEach((c, i) => (indexCurl[i] = c / total));
     this.fingers.forEach((f, i) => {
-      const c = curl[i];
       f.joints.forEach((j, k) => {
-        const amt = i === 0 ? indexCurl[k] : c * (k === 0 ? 1 : k === 1 ? 1.1 : 0.8);
+        const amt = i === 0 ? indexCurl[k] : joint[i][k] / total;
         j.rotation.x = -amt;
         j.rotation.z = k === 0 ? this.side * (1.5 - i) * spread * 0.5 : 0;
       });

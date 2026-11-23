@@ -14,6 +14,12 @@ const PI = Math.PI;
 const CALC_SEQ = [10, 8, 9, 5, 12, 12, 15, 9, 1, 2, 12, 12, 12, 14, 7, 9, 4, 3, 12, 12, 15, 6, 0, 1, 14];
 const CALC_TXT = ['3', '31', '312', '3125', '31250', '312500', '312500', '2', '28', '287', '2870', '28700', '287000', '599500', '6', '64', '643', '6430', '64300', '643000', '643000', '1', '17', '174', '1,242,174'];
 
+/**
+ * Where a held invoice sits in the hand socket frame (pose 'sheet'): the sheet's bottom edge is just above
+ * the palm, the nearly straight fingers support it from behind and the thumb presses on its front.
+ */
+const SHEET_IN_HAND = (side) => [side * -0.06, -0.1635, 0.0115];
+
 export class Scene03_AccountingNightmare extends SceneBase {
   build() {
     this.fadeIn = { dur: 0.9, color: [0, 0, 0] };
@@ -72,12 +78,12 @@ export class Scene03_AccountingNightmare extends SceneBase {
     if (t >= 2.6 && t < 5.55) {
       // compare two supplier invoices held up in front of the eyes
       const k = smooth(clamp((t - 2.6) / 0.6)); const d = smooth(clamp((t - 5.0) / 0.5));
-      const lp = fromEye(ph, -0.13, -0.17 - d * 0.12, 0.33); const rp = fromEye(ph, 0.13, -0.17 - d * 0.12, 0.33);
+      const lp = fromEye(ph, -0.13, -0.222 - d * 0.12, 0.33); const rp = fromEye(ph, 0.13, -0.222 - d * 0.12, 0.33);
       const pileL = [3.74, 0.8, -2.96]; const pileR = [5.2, 0.8, -2.92];
       const mixp = (a, b, kk) => a.map((v, i) => v + (b[i] - v) * kk);
       const sway = Math.sin(t * 2.2) * 0.01;
-      ph.state.armL = { target: wristFromSocket(mixp(pileL, [lp[0], lp[1] + sway, lp[2]], k), [0.1, 1, 0.15], toward), fingers: [0.1, 1, 0.15], palm: toward, weight: 1, pose: 'pinch' };
-      ph.state.armR = { target: wristFromSocket(mixp(pileR, [rp[0], rp[1] - sway, rp[2]], k), [-0.1, 1, 0.15], toward), fingers: [-0.1, 1, 0.15], palm: toward, weight: 1, pose: 'pinch' };
+      ph.state.armL = { target: wristFromSocket(mixp(pileL, [lp[0], lp[1] + sway, lp[2]], k), [0.1, 1, 0.15], toward), fingers: [0.1, 1, 0.15], palm: toward, weight: 1, pose: 'sheet' };
+      ph.state.armR = { target: wristFromSocket(mixp(pileR, [rp[0], rp[1] - sway, rp[2]], k), [-0.1, 1, 0.15], toward), fingers: [-0.1, 1, 0.15], palm: toward, weight: 1, pose: 'sheet' };
     }
     if (shot === 'calc') {
       const cur = this.presses.reduce((a, p) => (t >= p.t - 0.1 ? p : a), this.presses[0]);
@@ -86,8 +92,8 @@ export class Scene03_AccountingNightmare extends SceneBase {
       ph.state.armR = { target: wristFromSocket([kp.x, kp.y + lift, kp.z], f, n, INDEX_TIP(-1)), fingers: f, palm: n, weight: 1, pose: 'point' };
     }
     if (shot === 'invoice') {
-      const lp = fromEye(ph, -0.03, -0.13, 0.27);
-      ph.state.armL = { target: wristFromSocket(lp, [0.15, 1, 0.2], toward), fingers: [0.15, 1, 0.2], palm: toward, weight: 1, pose: 'pinch' };
+      const lp = fromEye(ph, -0.03, -0.183, 0.27);
+      ph.state.armL = { target: wristFromSocket(lp, [0.15, 1, 0.2], toward), fingers: [0.15, 1, 0.2], palm: toward, weight: 1, pose: 'sheet' };
     }
     if (shot === 'reflection') { // chin resting on the left hand
       const cp = fromEye(ph, -0.01, -0.13, 0.07);
@@ -133,7 +139,7 @@ export class Scene03_AccountingNightmare extends SceneBase {
       ph.state.look = pw.clone();
       w.director.set({ pos: [pw.x + 0.16 - k * 0.04, pw.y + 0.18, pw.z + 0.12], target: [pw.x - 0.01, pw.y, pw.z], fov: 30, aperture: 0.007, focus: pw.toArray(), maxblur: 0.01, handheld: 0.9, seed: 4 });
     } else if (shot === 'invoice') {
-      const tg = new THREE.Vector3(...fromEye(ph, -0.06, -0.08, 0.27));
+      const tg = new THREE.Vector3(...fromEye(ph, -0.005, -0.1, 0.27));
       this._tgt = tg; this._invoiceTarget = true;
       w.director.set(fpv(ph, tg, { fov: 34, aperture: 0.004, focus: tg.toArray(), handheld: 1.0 }));
     } else if (shot === 'reflection') {
@@ -170,11 +176,11 @@ export class Scene03_AccountingNightmare extends SceneBase {
       const k = smooth(clamp((t - 2.75) / 0.25));
       if (k > 0) {
         w.handInvoice.visible = true; w.handInvoice2.visible = true;
-        placeInHand(w.handInvoice, ph.handSocket(1), [-0.065, -0.11, 0.016], this.paperRot);
-        placeInHand(w.handInvoice2, ph.handSocket(-1), [0.065, -0.11, 0.016], this.paperRot);
+        placeInHand(w.handInvoice, ph.handSocket(1), SHEET_IN_HAND(1), this.paperRot);
+        placeInHand(w.handInvoice2, ph.handSocket(-1), SHEET_IN_HAND(-1), this.paperRot);
       }
     }
-    if (shot === 'invoice') { w.handInvoice.visible = true; placeInHand(w.handInvoice, ph.handSocket(1), [-0.065, -0.11, 0.016], this.paperRot); }
+    if (shot === 'invoice') { w.handInvoice.visible = true; placeInHand(w.handInvoice, ph.handSocket(1), SHEET_IN_HAND(1), this.paperRot); }
     if (t >= 5.55 && t < 11.4 && shot !== 'invoice') { // invoices put down beside the notebook
       w.handInvoice.visible = true; w.handInvoice.position.set(3.82, 0.7625, -2.88); w.handInvoice.rotation.set(0, 0.25, 0);
       w.handInvoice2.visible = true; w.handInvoice2.position.set(5.0, 0.7625, -2.86); w.handInvoice2.rotation.set(0, -0.3, 0);
@@ -186,6 +192,7 @@ export class Scene03_AccountingNightmare extends SceneBase {
     if (this._tgt && shot === 'fpv' && t < 5.55 && t > 3.0) {
       const a = 0.5 + 0.5 * Math.sin((t - 3.4) * 2.4);
       const p = w.handInvoice.getWorldPosition(new THREE.Vector3()).lerp(w.handInvoice2.getWorldPosition(new THREE.Vector3()), a);
+      p.y -= 0.035; // frame a little low so the thumbs gripping the sheets stay in shot
       ph.state.look = p; const s = w.director.shot; s.target = p.toArray(); s.focus = p.toArray(); w.director.set(s);
     }
   }

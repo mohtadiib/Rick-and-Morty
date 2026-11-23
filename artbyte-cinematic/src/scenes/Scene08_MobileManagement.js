@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 import { SceneBase } from './SceneBase.js';
 import { HOME_ORIGIN } from '../environments/OfficeEnvironment.js';
-import { keys, setLook, setMood, clockSec, placeInHand, wristFromSocket, fromEye } from './helpers.js';
+import { keys, setLook, setMood, clockSec, placeInHand, wristFromSocket, fromEye, INDEX_TIP } from './helpers.js';
 import { clamp, smooth } from '../core/utils.js';
+
+/** Right-hand phone grip, in the phone's frame (x right, y up, z towards the eyes); angle tilts the fingers from up towards the left. */
+const PHONE_GRIP = { angle: 1.05, x: -0.012, y: -0.03, z: 0.002 };
 
 /**
  * SCENE 08 — MOBILE AND REMOTE MANAGEMENT
@@ -53,21 +56,36 @@ export class Scene08_MobileManagement extends SceneBase {
     this._phoneP = phoneP;
     const eye = new THREE.Vector3(...fromEye(ph, 0, 0, 0));
     const toEye = eye.clone().sub(phoneP).normalize();
-    // right hand holds the phone, screen facing the eyes; left thumb swipes
+    // right hand holds the phone, screen facing the eyes; the left index finger swipes
     const up = new THREE.Vector3(0, 1, 0); const yN = up.clone().addScaledVector(toEye, -up.dot(toEye)).normalize(); const xN = new THREE.Vector3().crossVectors(yN, toEye);
     this._phoneQ = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xN, yN, toEye));
     const palmR = toEye.clone().negate();
-    ph.state.armR = { target: wristFromSocket(phoneP.clone().addScaledVector(toEye, -0.018).addScaledVector(yN, -0.02).toArray(), yN.toArray(), toEye.toArray(), [0, -0.075, 0.03]), fingers: yN.toArray(), palm: toEye.toArray(), weight: 1, pose: 'phone' };
+    // cradle grip: the phone's back rests on the palm, the fingers run diagonally up across the back and
+    // wrap the left edge (tips on the side bezel), the heel of the hand supports the lower-right corner
+    const gripA = PHONE_GRIP.angle; const fR = yN.clone().multiplyScalar(Math.cos(gripA)).addScaledVector(xN, -Math.sin(gripA));
+    const sockR = phoneP.clone().addScaledVector(xN, PHONE_GRIP.x).addScaledVector(yN, PHONE_GRIP.y).addScaledVector(toEye, PHONE_GRIP.z);
+    ph.state.armR = { target: wristFromSocket(sockR.toArray(), fR.toArray(), toEye.toArray()), fingers: fR.toArray(), palm: toEye.toArray(), weight: 1, pose: 'phone' };
     void palmR;
-    const swipe = [[4.0, 4.45], [6.6, 7.05], [8.4, 8.85]].find(([a, b]) => t > a - 0.3 && t < b + 0.2);
-    let sx = 0.02; let sw = 0.35;
-    if (swipe) { const k = clamp((t - swipe[0]) / (swipe[1] - swipe[0])); sx = 0.03 - 0.05 * k; sw = 1; }
-    const thumbP = phoneP.clone().addScaledVector(xN, sx).addScaledVector(toEye, 0.012).addScaledVector(yN, -0.02);
-    ph.state.armL = { target: wristFromSocket(thumbP.toArray(), yN.clone().add(xN.clone().multiplyScalar(-0.8)).toArray(), toEye.clone().negate().toArray(), [0.03, -0.1, 0.03]), fingers: yN.clone().add(xN.clone().multiplyScalar(-0.8)).toArray(), palm: toEye.clone().negate().toArray(), weight: sw, pose: 'relaxed' };
+    // each swipe: reach in (0.45 s), touch down, slide right → left, lift, settle back
+    const swipe = [[4.0, 4.45], [6.6, 7.05], [8.4, 8.85]].find(([a, b]) => t > a - 0.6 && t < b + 0.5);
+    let sx = 0.03; let sw = 0.35; let press = 0;
+    if (swipe) {
+      const [a, b] = swipe; const k = smooth(clamp((t - a) / (b - a)));
+      sx = 0.03 - 0.05 * k + 0.05 * smooth(clamp((t - b - 0.15) / 0.35));
+      sw = 0.35 + 0.65 * smooth(clamp((t - a + 0.6) / 0.45)) * (1 - smooth(clamp((t - b - 0.1) / 0.4)));
+      press = smooth(clamp((t - a + 0.15) / 0.15)) * (1 - smooth(clamp((t - b) / 0.12)));
+    }
+    // left index finger swipes the screen; the hand stays low-left so the app stays readable
+    const tipP = phoneP.clone().addScaledVector(xN, sx).addScaledVector(toEye, 0.018 - 0.0118 * press).addScaledVector(yN, -0.012);
+    const fL = yN.clone().multiplyScalar(0.72).addScaledVector(xN, 0.42).addScaledVector(toEye, -0.55).normalize();
+    const nL = toEye.clone().negate().addScaledVector(xN, -0.35).normalize();
+    ph.state.armL = { target: wristFromSocket(tipP.toArray(), fL.toArray(), nL.toArray(), INDEX_TIP(1)), fingers: fL.toArray(), palm: nL.toArray(), weight: sw, pose: 'point' };
     ph.state.look = phoneP.clone();
     ph.state.face = { smile: 0.35 + smooth(clamp((t - 8.0) / 1.0)) * 0.45, brows: 0.25 };
     w.phone.group.visible = true;
-    w.phoneGlow.position.copy(phoneP).addScaledVector(toEye, 0.1); w.phoneGlow.intensity = 0.35;
+    // screen light: up towards the face, so it lights the face without blowing out the hands and its
+    // reflection stays off the glass in the close-ups
+    w.phoneGlow.position.copy(phoneP).addScaledVector(toEye, 0.13).addScaledVector(yN, 0.16); w.phoneGlow.intensity = 0.22;
     w.screens.set('phone', { mode: 'app', slides: this.phoneSlides, index: idx, highlights: [{ slide: 'sales-report', region: 'total', k: smooth(clamp((t - 4.8) / 0.3)) * (1 - smooth(clamp((t - 6.3) / 0.3))) }, { slide: 'batches-actifed', region: 'b2', k: smooth(clamp((t - 7.3) / 0.3)) * (1 - smooth(clamp((t - 8.3) / 0.3))), color: '#ff7a3d' }] });
 
     if (shot === 'phone-macro') {

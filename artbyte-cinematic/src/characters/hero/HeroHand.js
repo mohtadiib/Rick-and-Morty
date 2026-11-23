@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { HAND_POSES } from '../HandController.js';
+import { HAND_POSES, CURL_PROFILE } from '../HandController.js';
 import { Profile, gridGeometry, weldNormals, superEllipse, applySkin, vertexColors, mergeAll, smoothstep, clamp01, mix, gauss } from './HeroGeometry.js';
 import { noise1 } from '../../core/utils.js';
 
@@ -23,6 +23,17 @@ const FINGERS = [
 ];
 const THUMB = { base: [0.03, -0.025, 0.012], len: [0.034, 0.03, 0.025], r: 0.0108 };
 const CALM_POSES = { relaxed: 1, open: 1, flat: 0.6, shake: 0.3, phone: 0.15 };
+
+/**
+ * Thumb joint rotations of a pose: `thumbRot` ([[x, y, z] × 3], y/z mirrored per side) when given,
+ * otherwise derived from the three `thumb` curl values (opposition swings it across the palm).
+ * Rotations are blended linearly, so mixing two formula poses equals the formula of the mixed values.
+ */
+function thumbEuler(p, s) {
+  if (p.thumbRot) return p.thumbRot.map(([x, y, z]) => [x, s * y, s * z]);
+  const th = p.thumb;
+  return [[-0.35 - th[0] * 0.7, s * (0.55 - th[0] * 0.25), s * (0.75 - th[0] * 0.55)], [-th[1] * 0.9, 0, s * -th[1] * 0.2], [-th[2] * 0.9, 0, 0]];
+}
 
 export class HeroHand {
   /**
@@ -221,16 +232,17 @@ export class HeroHand {
 
   // ------------------------------------------------------------------ posing
   static _eval(blend) {
-    const o = { curl: [0, 0, 0, 0], thumb: [0, 0, 0], spread: 0, indexCurl: [0, 0, 0] }; let total = 0;
+    const o = { joint: [0, 1, 2, 3].map(() => [0, 0, 0]), thumb: [0, 0, 0], spread: 0, indexCurl: [0, 0, 0] }; let total = 0;
     for (const [name, wt] of Object.entries(blend)) {
       const p = HAND_POSES[name]; if (!p || wt <= 0) continue; total += wt;
-      p.curl.forEach((c, i) => (o.curl[i] += c * wt));
+      const prof = p.profile || CURL_PROFILE;
+      p.curl.forEach((c, i) => prof.forEach((m, k) => (o.joint[i][k] += c * m * wt)));
       p.thumb.forEach((c, i) => (o.thumb[i] += c * wt));
       o.spread += p.spread * wt;
       (p.indexCurl || [p.curl[0], p.curl[0] * 0.9, p.curl[0] * 0.7]).forEach((c, i) => (o.indexCurl[i] += c * wt));
     }
     if (total <= 0) return null;
-    o.curl = o.curl.map((c) => c / total); o.thumb = o.thumb.map((c) => c / total); o.spread /= total; o.indexCurl = o.indexCurl.map((c) => c / total);
+    o.joint = o.joint.map((j) => j.map((c) => c / total)); o.thumb = o.thumb.map((c) => c / total); o.spread /= total; o.indexCurl = o.indexCurl.map((c) => c / total);
     return o;
   }
 
@@ -250,29 +262,29 @@ export class HeroHand {
       const kf = (i) => { const t = clamp01((k - i * 0.07) / (1 - 0.21)); return t * t * (3 - 2 * t); };
       per = (fi) => {
         const t = kf(fi);
-        return { curl: mix(A.curl[fi], B.curl[fi], t), ic: A.indexCurl.map((c, j) => mix(c, B.indexCurl[j], t)), spread: mix(A.spread, B.spread, t) };
+        return { joint: A.joint[fi].map((c, j) => mix(c, B.joint[fi][j], t)), ic: A.indexCurl.map((c, j) => mix(c, B.indexCurl[j], t)), spread: mix(A.spread, B.spread, t) };
       };
       const tt = kf(0.5);
-      this._thumb = A.thumb.map((c, j) => mix(c, B.thumb[j], tt));
+      const EA = thumbEuler(HAND_POSES[entries[0][0]], this.side); const EB = thumbEuler(HAND_POSES[entries[1][0]], this.side);
+      this._thumbE = EA.map((e, j) => e.map((v, c) => mix(v, EB[j][c], tt)));
     } else {
       const P = HeroHand._eval(blend);
-      per = () => ({ curl: null, ic: P.indexCurl, spread: P.spread, P });
-      this._thumb = P.thumb;
+      per = (fi) => ({ joint: P.joint[fi], ic: P.indexCurl, spread: P.spread });
+      let tw = 0; this._thumbE = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+      entries.forEach(([n, v]) => { tw += v; thumbEuler(HAND_POSES[n], this.side).forEach((e, j) => e.forEach((x, c) => (this._thumbE[j][c] += x * v))); });
+      this._thumbE.forEach((e) => e.forEach((x, c) => (e[c] = x / tw)));
       this._P = P;
     }
     this.fingers.forEach((f, i) => {
-      const q = per(i); const c = q.curl ?? q.P.curl[i];
+      const q = per(i);
       f.joints.forEach((j, k) => {
-        const amt = i === 0 ? q.ic[k] : c * (k === 0 ? 1 : k === 1 ? 1.1 : 0.8);
+        const amt = i === 0 ? q.ic[k] : q.joint[k];
         j.rotation.x = -amt;
         j.rotation.z = k === 0 ? this.side * (1.5 - i) * q.spread * 0.5 : 0;
       });
       f._base = f.joints.map((j) => j.rotation.x);
     });
-    const s = this.side; const th = this._thumb;
-    this.thumb[0].rotation.set(-0.35 - th[0] * 0.7, s * (0.55 - th[0] * 0.25), s * (0.75 - th[0] * 0.55));
-    this.thumb[1].rotation.set(-th[1] * 0.9, 0, s * -th[1] * 0.2);
-    this.thumb[2].rotation.set(-th[2] * 0.9, 0, 0);
+    this._thumbE.forEach((e, j) => this.thumb[j].rotation.set(e[0], e[1], e[2]));
   }
 
   /** Subtle living motion for relaxed hands (deterministic in time; grips stay exact). */
