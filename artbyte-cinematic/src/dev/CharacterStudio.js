@@ -12,6 +12,9 @@ import { createArtByteEmployee } from '../characters/ArtByteEmployee.js';
  *   /?studio=pharmacist&render=1&width=…     render API for scripts/render-studio.mjs
  *
  * window.__STUDIO__.render({ cam, yaw, pose, handL, handR, face, t }) renders one frame.
+ *   QA extras: abduct (apose arm angle, rad), palm ([x,y,z], x mirrored per side), handPose,
+ *   floor (false hides the cyclorama), bg (hex background),
+ *   vignette, exposure, viewOffset [fullW, fullH, x, y, w, h] (render a pixel-exact crop of a larger frame).
  *   cam:  'full' | 'face' | 'face34' | 'bust' | 'hands' | 'feet' | { pos, target, fov }
  *   pose: 'apose' | 'relaxed' | 'walk' | 'sit' | 'reach' | 'pinch' | 'grip' | 'fist' | 'point'
  */
@@ -60,15 +63,17 @@ export async function startStudio(params) {
   scene.add(char.root);
   const cam = renderer.camera;
 
-  function pose(name, t) {
+  function pose(name, t, opts = {}) {
     const st = char.reset(); st.seed = { pharmacist: 1, customer: 7 }[char.name] ?? 20;
     st.face = { smile: 0.55, brows: 0.1, talk: 0, eyesClosed: 0, squint: 0 };
     const sh = (s) => char.shoulderWorld(s);
     char.update(t); // to get shoulder positions
     if (name === 'apose') {
+      const ab = opts.abduct ?? 0.58; // arm angle from vertical (radians)
       [1, -1].forEach((s) => {
-        const S = sh(s); const d = new THREE.Vector3(s * Math.sin(0.58), -Math.cos(0.58), 0.05).normalize();
-        const arm = { target: S.clone().addScaledVector(d, 0.6), weight: 1, fingers: d.toArray(), palm: [-s * 0.6, -0.2, 0.75], pose: 'relaxed' };
+        const S = sh(s); const d = new THREE.Vector3(s * Math.sin(ab), -Math.cos(ab), 0.05).normalize();
+        const pl = opts.palm || [0.6, -0.2, 0.75];
+        const arm = { target: S.clone().addScaledVector(d, 0.6), weight: 1, fingers: d.toArray(), palm: [-s * pl[0], pl[1], pl[2]], pose: opts.handPose || 'relaxed' };
         if (s > 0) st.armL = arm; else st.armR = arm;
       });
     } else if (name === 'walk') { st.walk = { phase: t * 5.2, amount: 1 }; }
@@ -84,7 +89,11 @@ export async function startStudio(params) {
   let orbit = { yaw: 0, dist: 0, cam: 'full' };
   function render(opts = {}) {
     const t = opts.t ?? 0;
-    const st = pose(opts.pose || 'relaxed', t);
+    const st = pose(opts.pose || 'relaxed', t, opts);
+    // QA options: keyed background without floor (exact silhouettes), no vignette
+    floor.visible = opts.floor ?? true;
+    scene.background = new THREE.Color(opts.bg ?? 0xd5d6d8);
+    renderer.grade.vignette = opts.vignette ?? 0.12; renderer.grade.exposure = opts.exposure ?? 1;
     if (opts.face) Object.assign(st.face, opts.face);
     if (opts.handL) st.handL = opts.handL; if (opts.handR) st.handR = opts.handR;
     st.yaw = opts.yaw ?? 0;
@@ -93,13 +102,16 @@ export async function startStudio(params) {
     const c = typeof opts.cam === 'object' ? opts.cam : CAMS[opts.cam || 'full'];
     const tgt = new THREE.Vector3(...c.target); const pos = new THREE.Vector3(...c.pos);
     if (opts.orbit) pos.sub(tgt).applyAxisAngle(new THREE.Vector3(0, 1, 0), opts.orbit).add(tgt);
-    cam.position.copy(pos); cam.fov = c.fov; cam.aspect = width / height; cam.updateProjectionMatrix(); cam.lookAt(tgt);
+    // viewOffset [fullW, fullH, x, y, w, h]: render a sub-rectangle of a larger frame (pixel-exact crops)
+    if (opts.viewOffset) cam.setViewOffset(...opts.viewOffset); else cam.clearViewOffset();
+    cam.position.copy(pos); cam.fov = c.fov; cam.aspect = opts.viewOffset ? opts.viewOffset[0] / opts.viewOffset[1] : width / height;
+    cam.updateProjectionMatrix(); cam.lookAt(tgt);
     renderer.render(t);
     return new Promise((r) => requestAnimationFrame(() => r(true)));
   }
 
   document.getElementById('loader')?.classList.add('done');
-  window.__STUDIO__ = { render, char };
+  window.__STUDIO__ = { render, char, cam, renderer, THREE };
   window.__STUDIO_READY__ = true;
   if (RENDER) return;
 

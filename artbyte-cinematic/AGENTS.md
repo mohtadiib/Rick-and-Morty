@@ -25,9 +25,12 @@ so check stills first and render the full video last.
 
 ## 2. Hard rules (do not break)
 
-1. **Approved character looks are locked.** `docs/approved-looks/` is the owner-approved reference.
-   Make no visible design change to faces, bodies, outfits or colours unless the owner asks for it. Bug
-   fixes that keep the look (clipping, skinning, lighting artefacts) are fine; show before/after stills.
+1. **The reference images are the target.** Every character must match its sheet in
+   `public/assets/style-reference/` (pharmacist, customer, artbyte-jacket, artbyte-blazer) as closely as
+   possible. `docs/approved-looks/` records an older baseline, not a freeze. Change a character only to
+   move it closer to its reference, never to invent a new look, and show before / after / reference.
+   Shared code (`hero/HeroHead.js`, `HeroBody.js`, `HeroMaterials.js`) serves every character: put
+   character-specific changes behind look options and check the others render as before.
 2. **The narration is never edited, regenerated or re-timed.** `public/assets/audio/narration-ar.wav`
    is played back as-is. Picture is synced to it, never the other way round.
 3. **Keep the character API.** Bone names, `this.joints` aliases, `state` fields, `handSocket()`,

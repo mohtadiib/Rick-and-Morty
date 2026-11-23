@@ -118,11 +118,11 @@ export function leatherNormalMap() {
  * Eyeball colour map (equirectangular around the eye's +Z axis):
  * v = 0 is the front pole → pupil, iris with radial fibres and limbal ring, then sclera.
  */
-export function eyeTexture(irisHex = 0x4a2a17) {
-  return cached(`eye-${irisHex}`, () => {
+export function eyeTexture(irisHex = 0x4a2a17, irisR = 0.2, pupilR = 0.085) {
+  return cached(`eye-${irisHex}-${irisR}-${pupilR}`, () => {
     const W = 512; const H = 256; const c = canvas(W, H); const ctx = c.getContext('2d'); const img = ctx.createImageData(W, H);
     const iris = new THREE.Color(irisHex); const sclera = new THREE.Color(0xf1ece6);
-    const pupilR = 0.085; const irisR = 0.2; // as fraction of polar angle range (0..1 = 0..π)
+    // pupilR / irisR: fraction of the polar angle range (0..1 = 0..π)
     for (let y = 0; y < H; y++) {
       const a = y / H; // polar angle / π from the front pole
       for (let x = 0; x < W; x++) {
@@ -171,6 +171,23 @@ export function bakeTexture(w, h, fn) {
   ctx.putImageData(img, 0, 0);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.needsUpdate = true;
   return t;
+}
+
+/**
+ * Speckled colour map for short hair / beard shells (UV space of the skull): per-texel grain (hair tips
+ * catching light) over a soft patchy variation. Values are absolute colours around `hex`.
+ */
+export function grainTexture(hex, { w = 1024, h = 512, light = 0.55, dark = 0.45, seed = 5 } = {}) {
+  return cached(`grain-${hex}-${w}-${light}-${dark}-${seed}`, () => {
+    const c = new THREE.Color(hex);
+    return bakeTexture(w, h, (u, v) => {
+      const x = Math.floor(u * w); const y = Math.floor(v * h);
+      const g = hash2(x, y, seed); const g2 = hash2(x >> 1, y >> 1, seed + 7);
+      const patchy = 0.85 + 0.3 * fbm(u * 24, v * 12, 24, seed + 3, 3);
+      let k = (1 - dark) + dark * g2; if (g > 0.86) k += light * (g - 0.86) / 0.14;
+      return [c.r * k * patchy, c.g * k * patchy, c.b * k * patchy];
+    });
+  });
 }
 
 /** White embroidered-style text (transparent background) for chest logos. */

@@ -26,8 +26,9 @@ export class HeroCharacter extends Character {
   _buildVisuals(spec, M) {
     const look = spec.look;
     this.heroHead = new HeroHead({
-      skinColor: look.skin, hairColor: look.hair, beardColor: look.beard, irisColor: look.iris, lipColor: look.lips, glasses: !!look.glasses,
+      skinColor: look.skin, hairColor: look.hair, beardColor: look.beard, irisColor: look.iris, lipColor: look.lips, glasses: look.glasses || false,
       hair: look.hairStyle || 'short', beard: look.beardStyle === undefined ? 'full' : look.beardStyle, female: spec.body === 'f', face: look.face,
+      hairCfg: look.hairCfg, hairLine: look.hairLine, beardLine: look.beardLine, grain: look.grain,
     }, M);
     this.heroHead.group.position.y = 0.1 - (look.headDrop ?? 0); this.heroHead.group.scale.setScalar(look.headScale ?? 1); this.head.add(this.heroHead.group);
     this.headGeo = this.heroHead.group;
@@ -43,7 +44,7 @@ export class HeroCharacter extends Character {
     this.state = this.defaultState(); this.state.seed = st.seed;
     this.neckMesh = this.body.meshes.neck;
     this.chestDetails = new THREE.Group(); // kept for API compatibility (stylised cast uses it)
-    this.root.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    this.root.traverse((o) => { if (o.isMesh) { o.castShadow = !o.userData.noShadow; o.receiveShadow = true; } });
   }
 
   _afterPose(time, { sit, walkAmt, ph }) {
