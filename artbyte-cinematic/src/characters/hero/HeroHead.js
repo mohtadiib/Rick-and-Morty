@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Profile, gridGeometry, weldNormals, smoothstep, clamp01, mix, gauss, taperTube } from './HeroGeometry.js';
-import { eyeTexture, hairNormalMap, skinNormalMap, bakeTexture, fbm2, grainTexture } from './HeroTextures.js';
+import { eyeTexture, hairNormalMap, skinNormalMap, bakeTexture, fbm2, grainTexture, hash2 } from './HeroTextures.js';
 import { clamp, lerp, hash1, noise1 } from '../../core/utils.js';
 
 /**
@@ -96,11 +96,12 @@ function sculpt(p, F) {
     if (p.y < jaw) { const k = smoothstep(0.08, -0.01, p.z); p.y = jaw + (p.y - jaw) * (1 - 0.55 * k); p.x *= 1 - 0.18 * k * smoothstep(jaw, jaw - 0.03, p.y); }
   }
   const g = (cx, cy, cz, rx, ry, rz) => gauss(p, cx, cy, cz, rx, ry, rz);
-  const EX = F.eyeX; const EY = F.eyeY; const nw = F.noseW;
+  const EX = F.eyeX; const EY = F.eyeY; const nw = F.noseW; const MY = F.mouthY ?? -0.0598;
   // brow ridge + forehead
   p.z += F.browRidge * g(0, 0.034, 0.092, 0.05, 0.011, 0.04);
   [1, -1].forEach((s) => {
-    p.z -= F.socket * g(s * EX, EY - 0.001, 0.092, 0.0175 * (F.socketW ?? 1), 0.0128 * (F.socketW ?? 1), 0.04); // eye socket
+    // eye socket (socketX widens it sideways for almond eyes, socketIn moves it towards the nose)
+    p.z -= F.socket * g(s * (EX - (F.socketIn ?? 0)), EY - 0.001, 0.092, 0.0175 * (F.socketW ?? 1) * (F.socketX ?? 1), 0.0128 * (F.socketW ?? 1), 0.04);
     p.z += F.cheek * g(s * 0.055, -0.004, 0.07, 0.016, 0.012, 0.04); // cheekbone
     p.x += s * 0.0035 * g(s * 0.06, -0.006, 0.06, 0.016, 0.014, 0.03);
     p.x -= s * 0.0035 * g(s * 0.07, 0.04, 0.035, 0.014, 0.02, 0.03); // temple hollow
@@ -108,7 +109,7 @@ function sculpt(p, F) {
     p.z += F.alae * g(s * 0.0145 * nw, -0.033 + F.noseY, 0.09, 0.0088 * nw, 0.0072, 0.04); // ala
     p.x += s * F.alae * 0.45 * g(s * 0.0145 * nw, -0.033 + F.noseY, 0.09, 0.0088 * nw, 0.0072, 0.04);
     p.z -= 0.0032 * g(s * 0.0072 * nw, -0.041 + F.noseY, 0.105, 0.0034, 0.0022, 0.02); // nostril
-    p.z -= 0.0022 * g(s * (F.lipW + 0.0048), -0.06, 0.09, 0.005, 0.006, 0.03); // mouth corner
+    p.z -= 0.0022 * g(s * (F.lipW + 0.0048), MY - 0.0002, 0.09, 0.005, 0.006, 0.03); // mouth corner
   });
   // nose: bridge between the eyes → dorsum → tip
   p.z += F.noseBridge * g(0, 0.012, 0.09, 0.0072 * nw, 0.022, 0.04);
@@ -116,9 +117,9 @@ function sculpt(p, F) {
   p.z += F.noseTip * g(0, -0.031 + F.noseY, 0.1, 0.0125 * nw, 0.0105, 0.04);
   p.y -= 0.0025 * g(0, -0.034 + F.noseY, 0.11, 0.01, 0.006, 0.02);
   // muzzle (teeth support), philtrum, mouth line, chin
-  p.z += F.muzzle * g(0, -0.06, 0.085, 0.03 * Math.max(1, F.lipW / 0.0212), 0.022, 0.04);
-  p.z -= 0.0012 * g(0, -0.047, 0.1, 0.0035, 0.006, 0.02);
-  p.z -= 0.0026 * g(0, -0.0598, 0.1, 0.023 * Math.max(1, F.lipW / 0.0212), 0.0062, 0.02);
+  p.z += F.muzzle * g(0, MY - 0.0002, 0.085, 0.03 * Math.max(1, F.lipW / 0.0212), 0.022, 0.04);
+  p.z -= 0.0012 * g(0, MY + 0.0128, 0.1, 0.0035, 0.006, 0.02);
+  p.z -= 0.0026 * g(0, MY, 0.1, 0.023 * Math.max(1, F.lipW / 0.0212), 0.0062, 0.02);
   p.z += F.chin * g(0, -0.1, 0.07, 0.022 * (F.chinW ?? 1), 0.016, 0.04);
   if (F.cheekFull) [1, -1].forEach((s) => { p.x += s * F.cheekFull * g(s * 0.06, -0.035, 0.045, 0.02, 0.026, 0.035); p.z += F.cheekFull * 0.6 * g(s * 0.045, -0.03, 0.07, 0.02, 0.022, 0.03); });
   p.y -= F.chinDrop * g(0, -0.105, 0.06, 0.026, 0.014, 0.04);
@@ -133,7 +134,7 @@ const BEARDLINE = new Profile([[0, -0.0432], [0.2, -0.0452], [0.32, -0.0465], [0
 const az = (p) => Math.abs(Math.atan2(p.x, p.z));
 function hairMask(p, soft = 0, line = HAIRLINE, ramp = 0.011) { const b = line.at(az(p))[0]; return smoothstep(b - 0.003 - soft, b + ramp, p.y); }
 function mouthHole(p, F = FACE_MALE) {
-  const dy = p.y + 0.0598; const [up, dn] = F.mouthHole || [0.0098, 0.0098]; // clear skin above / below the mouth line
+  const dy = p.y - (F.mouthY ?? -0.0598); const [up, dn] = F.mouthHole || [0.0098, 0.0098]; // clear skin above / below the mouth line
   const e = Math.hypot(p.x / (0.0265 * Math.max(1, F.lipW / 0.0212)), dy / (dy > 0 ? up : dn)); return smoothstep(0.86, 1.18, e);
 }
 const jawLine = (z) => mix(-0.074, -0.108, smoothstep(-0.01, 0.075, z));
@@ -202,12 +203,19 @@ export class HeroHead {
       const ns = F.nostrilShade ?? 1;
       [1, -1].forEach((s) => { const k = gauss(p, s * 0.0072, -0.0415 + F.noseY, 0.103, 0.003, 0.0022, 0.01) * ns; r *= 1 - 0.75 * k; g *= 1 - 0.78 * k; b *= 1 - 0.75 * k; });
       // skin under the lips area (blends into the lip meshes)
-      const lip = gauss(p, 0, -0.0598, 0.1, 0.022, 0.0075, 0.03);
+      const lip = gauss(p, 0, F.mouthY ?? -0.0598, 0.1, 0.022, 0.0075, 0.03);
       r = mix(r, lipC.r, 0.5 * lip); g = mix(g, lipC.g, 0.5 * lip); b = mix(b, lipC.b, 0.5 * lip);
       // stubble / hairline fade (soft band around the hair and beard shells)
       const side = 1 - 0.14 * (1 - smoothstep(0.02, 0.07, p.y)); // temple / side fade shows a little skin through
-      const hairPaint = this.hairStyle === 'hijab' ? 0 : hairMask(p, 0.012, this.hairLine(), this.hairRamp()) * 0.88 * side;
-      const beardPaint = beardMask(p, 0.01, this.beardLine, F) * (this.beard === 'full' ? (F.beardPaint ?? 0.9) : this.beard === 'short' ? 0.5 : this.look.female ? 0 : 0.22);
+      // per-texel speckle (≈0.6 mm): stubble dots for fades and stubble beards
+      const speck = hash2(Math.floor(u * 1536), Math.floor(v * 768), 77) > 0.55 ? 1 : 0;
+      let hairPaint = this.hairStyle === 'hijab' ? 0 : hairMask(p, 0.012, this.hairLine(), this.hairRamp()) * 0.88 * side;
+      const HC = this.look.hairCfg || {};
+      if (HC.fade && hairPaint > 0) { // skin fade: dense at the top, dotted stubble down the sides
+        const dens = Math.max(this.fadeDensity(p), 0); hairPaint *= dens + (1 - dens) * 0.62 * speck;
+      }
+      let beardPaint = beardMask(p, 0.01, this.beardLine, F) * (this.beard === 'full' ? (F.beardPaint ?? 0.9) : this.beard === 'short' ? 0.5 : this.beard === 'stubble' ? 1 : this.look.female ? 0 : 0.22);
+      if (this.beard === 'stubble') beardPaint *= (F.stubble ?? 0.55) * (0.45 + 0.55 * speck) * (1 + 0.35 * gauss(p, 0, -0.1, 0.07, 0.03, 0.02, 0.05));
       const st = Math.max(hairPaint, beardPaint);
       r = mix(r, hair.r, st); g = mix(g, hair.g, st); b = mix(b, hair.b, st);
       return [r, g, b];
@@ -219,6 +227,12 @@ export class HeroHead {
   }
 
   hairRamp() { return this.hairStyle === 'coily' ? 0.0045 : 0.011; }
+  /** Skin-fade density (1 = full hair, 0 = skin) – front line-up stays full, the sides fade downwards. */
+  fadeDensity(p) {
+    const f = (this.look.hairCfg || {}).fade; if (!f) return 1;
+    const side = smoothstep(0.72, 0.98, az(p));
+    return mix(1, smoothstep(f[0], f[1], p.y), side);
+  }
 
   /** Head-surface z at final (already compressed) head-space (x, y). */
   surfaceZFinal(x, y) {
@@ -314,7 +328,11 @@ export class HeroHead {
       crease.rotation.set(-Math.PI / 2, 0, -Math.PI / 2 - 1.1); crease.position.y = R * 1.03 * Math.cos(Math.PI * cA);
       if (this.F.crease !== false) upper.add(crease);
       const lower = new THREE.Group(); lidPivot.add(lower);
-      const lowG = new THREE.SphereGeometry(R * 0.985, 36, 8, Math.PI / 2 - 1.35, 2.7, Math.PI * 0.66, Math.PI * 0.34);
+      // lower lid: its margin sits at polar angle lowLidTheta; rotated down at the front (F.lowerLid > 0) it curves
+      // under the iris and meets the upper lid at the corners (almond eye)
+      const lt = Math.PI * (this.F.lowLidTheta ?? 0.66);
+      const lowG = new THREE.SphereGeometry(R * (this.F.lowLidR ?? 0.985), 36, 10, Math.PI / 2 - 1.35, 2.7, lt, Math.PI - lt);
+      if (this.F.lidSX) { lidG.scale(this.F.lidSX, 1, 1); lowG.scale(this.F.lidSX, 1, 1); } // narrower lids: corners meet on the eyeball
       lower.add(new THREE.Mesh(lowG, M.lid));
       this.eyes.push({ s, eg, lidPivot, upper, lower });
     });
@@ -355,9 +373,10 @@ export class HeroHead {
   _buildMouth() {
     const M = this.mats;
     const xs = Math.max(0.022, this.F.lipW);
-    const z0 = this.surfaceZ(0, -0.0598); const z1 = this.surfaceZ(xs, -0.0598);
+    const MY = this.F.mouthY ?? -0.0598;
+    const z0 = this.surfaceZ(0, MY); const z1 = this.surfaceZ(xs, MY);
     this.mouthCurv = (z0 - z1) / (xs * xs);
-    this.mouth = new THREE.Group(); this.mouth.position.set(0, warpY(-0.0598, this.F), z0 + (this.F.mouthZ ?? 0.0012)); this.group.add(this.mouth);
+    this.mouth = new THREE.Group(); this.mouth.position.set(0, warpY(MY, this.F), z0 + (this.F.mouthZ ?? 0.0012)); this.group.add(this.mouth);
     if (this.F.lipFollowSkin) { // skin depth around the mouth (relative to the mouth origin) → lips rest on the face
       const xs = []; const ys = []; for (let i = 0; i <= 12; i++) xs.push(-0.054 + i * 0.009); for (let j = 0; j <= 9; j++) ys.push(-0.018 + j * 0.0036);
       const my = this.mouth.position.y; const mz = this.mouth.position.z;
@@ -462,6 +481,7 @@ export class HeroHead {
         const c2 = Math.sin(p.x * 2900 + 0.4) * Math.sin(p.y * 3100 + 2.2) * Math.sin(p.z * 2700 + 0.9);
         const b0 = line.at(az(p))[0]; const grow = 0.3 + 0.7 * smoothstep(b0, b0 + 0.016, p.y); // thin at the line-up, full inside
         const T = (mix(HC.side ?? 0.0055, HC.top ?? 0.012, Math.pow(smoothstep(0.0, 0.085, p.y), 0.85)) + (HC.back ?? 0.0015) * back * top) * grow + 0.0006 * c + 0.0004 * c2;
+        if (HC.fade) { const dn = this.fadeDensity(p); if (dn < 0.35) return -0.0025; return mix(-0.0025, T * smoothstep(0.35, 0.9, dn), m); }
         return mix(-0.0025, T, m);
       }
       if (curly) { // tight curls: thicker crop with a bumpy, coily surface
@@ -476,13 +496,13 @@ export class HeroHead {
     if (this.look.grain) { this.mats.hair.map = grainTexture(this.look.hairColor, this.look.grain); this.mats.hair.color.set(0xffffff); this.mats.hair.needsUpdate = true; }
     const hair = new THREE.Mesh(hairG, this.mats.hair); hair.name = 'hair'; this.group.add(hair);
     if (braids) this._buildBun();
-    if (!this.beard) return;
+    if (!this.beard || this.beard === 'stubble') return; // stubble is painted on the skin only
     const k = (this.beard === 'short' ? 0.24 : 1) * (this.F.beardT ?? 1);
     const BL = this.beardLine; const F = this.F;
     const beardG = shell((p) => {
       const m = beardMask(p, 0, BL, F); if (m <= 0.001) return -0.0025;
       const chin = gauss(p, 0, -0.105, 0.06, 0.03, 0.02, 0.05) * (F.chinBeard ?? 1);
-      const must = gauss(p, 0, -0.046, 0.1, 0.03, 0.004, 0.03);
+      const must = gauss(p, 0, (F.mouthY ?? -0.0598) + 0.0138, 0.1, 0.03, 0.004, 0.03);
       const T = (0.0019 + 0.0022 * chin + 0.0007 * smoothstep(-0.03, -0.09, p.y) - 0.0003 * must) * k;
       return mix(-0.0025, T, m);
     });

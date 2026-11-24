@@ -205,4 +205,4 @@ export function textTexture(text, { color = '#ffffff', w = 512, h = 160, weight 
   });
 }
 
-export { fbm as fbm2, vnoise };
+export { fbm as fbm2, vnoise, hash2 };

@@ -56,8 +56,10 @@ const COAT_LAB = new Profile([
 const COAT_JACKET = new Profile([
   [-0.025, 0.163, 0.114, 2.5, -0.009], [0.015, 0.161, 0.112, 2.5, -0.007], [0.04, 0.165, 0.115, 2.5, -0.004], [0.095, 0.166, 0.117, 2.5, 0.0],
   [0.15, 0.166, 0.121, 2.5, 0.004], [0.22, 0.17, 0.123, 2.55, 0.007], [0.29, 0.177, 0.125, 2.6, 0.009],
-  [0.36, 0.18, 0.12, 2.7, 0.007], [0.42, 0.172, 0.108, 2.7, 0.002], [0.455, 0.163, 0.098, 2.55, -0.003],
-  [0.48, 0.142, 0.088, 2.35, -0.005], [0.5, 0.114, 0.08, 2.2, -0.005], [0.514, 0.092, 0.075, 2.1, -0.004], [0.524, 0.082, 0.073, 2.05, -0.004],
+  // shoulder line measured against artbyte-jacket-reference.jpg: nearly flat from the collar to the shoulder point
+  [0.36, 0.18, 0.12, 2.7, 0.007], [0.42, 0.178, 0.11, 2.7, 0.002], [0.455, 0.182, 0.1, 2.6, -0.002], [0.475, 0.186, 0.094, 2.5, -0.004],
+  [0.486, 0.176, 0.091, 2.45, -0.005], [0.494, 0.16, 0.088, 2.35, -0.005], [0.502, 0.14, 0.085, 2.25, -0.006], [0.508, 0.12, 0.082, 2.15, -0.006],
+  [0.514, 0.1, 0.079, 2.08, -0.006], [0.52, 0.087, 0.077, 2.02, -0.006], [0.527, 0.08, 0.075, 2.0, -0.006],
 ]);
 const COAT_BLAZER_F = new Profile([
   [-0.105, 0.178, 0.124, 2.5, -0.012], [-0.06, 0.173, 0.12, 2.5, -0.012], [-0.02, 0.173, 0.121, 2.5, -0.013],
@@ -77,8 +79,8 @@ const COAT_DRESS = new Profile([
 // sleeves: [s (down from the shoulder joint), a, b]
 const SLEEVE_LAB = [[-0.02, 0.0, 0.0], [-0.0175, 0.024, 0.023], [-0.011, 0.038, 0.037], [0.0, 0.048, 0.046], [0.016, 0.0545, 0.0523],
   [0.05, 0.0555, 0.0533], [0.14, 0.0528, 0.0508], [0.24, 0.0496, 0.0477], [0.29, 0.0482, 0.0463], [0.36, 0.0462, 0.0444], [0.44, 0.0444, 0.0426], [0.5, 0.0436, 0.0418]];
-const SLEEVE_JACKET = [[-0.041, 0.0, 0.0], [-0.037, 0.03, 0.029], [-0.028, 0.047, 0.045], [-0.013, 0.057, 0.055], [0.008, 0.0605, 0.058],
-  [0.05, 0.06, 0.057], [0.14, 0.056, 0.054], [0.24, 0.052, 0.05], [0.29, 0.0505, 0.0485], [0.36, 0.049, 0.047], [0.43, 0.0475, 0.0455], [0.465, 0.046, 0.044], [0.478, 0.0385, 0.0375], [0.53, 0.0378, 0.0368]];
+const SLEEVE_JACKET = [[-0.035, 0.0, 0.0], [-0.032, 0.021, 0.02], [-0.024, 0.039, 0.037], [-0.011, 0.052, 0.05], [0.008, 0.058, 0.056],
+  [0.05, 0.0585, 0.0558], [0.14, 0.056, 0.054], [0.24, 0.052, 0.05], [0.29, 0.0505, 0.0485], [0.36, 0.049, 0.047], [0.43, 0.0475, 0.0455], [0.465, 0.046, 0.044], [0.478, 0.0385, 0.0375], [0.53, 0.0378, 0.0368]];
 const SLEEVE_BLAZER_F = [[-0.037, 0.0, 0.0], [-0.033, 0.027, 0.026], [-0.025, 0.042, 0.04], [-0.011, 0.051, 0.049], [0.008, 0.0545, 0.0525],
   [0.05, 0.0535, 0.0515], [0.14, 0.0502, 0.0482], [0.24, 0.0465, 0.0445], [0.29, 0.0452, 0.0432], [0.36, 0.0435, 0.0415], [0.44, 0.0418, 0.0398], [0.512, 0.0405, 0.0385]];
 const SLEEVE_DRESS = [[-0.037, 0.0, 0.0], [-0.033, 0.028, 0.027], [-0.025, 0.044, 0.042], [-0.011, 0.053, 0.051], [0.008, 0.057, 0.055],
@@ -89,11 +91,13 @@ const SLEEVE_DRESS = [[-0.037, 0.0, 0.0], [-0.033, 0.028, 0.027], [-0.025, 0.044
 function outerConfig(kind) {
   if (kind === 'jacket') {
     return {
-      P: COAT_JACKET, hem: -0.025, top: 0.508, gap: (h) => 0.0018 + 0.024 * smoothstep(0.46, 0.508, h), skirtFrom: 0.06,
+      P: COAT_JACKET, hem: -0.025, top: 0.53, topBack: 0.52, neckV: [0.456, 0.9, 0.3], gap: () => 0.0018, skirtFrom: 0.06, shoulderInf: [0.46, 0.11],
+      // polo collar measured on the reference: leaf points at (±0.08, 0.476), outer edge up to the shoulder line
+      polo: { c0: 0.1, point: [0.08, 0.468], side: [0.087, 0.521], sidePhi: 1.25, backH: 0.51, stand: [0.004, 0.022], lean: [0.0, 0.009] },
       folds: (th, h) => 0.0018 * Math.sin(th * 11) * smoothstep(0.015, 0.045, h) * smoothstep(0.12, 0.045, h), rib: [-0.025, 0.015],
-      edges: false, placket: { x0: -0.013, x1: 0.016, h0: -0.024, h1: 0.505 }, collar: 'polo',
+      edges: false, placket: { x0: -0.013, x1: 0.016, h0: -0.024, h1: 0.455 }, collar: 'polo',
       pockets: [{ kind: 'vwelt', x0: 0.12, x1: 0.109, h0: 0.05, h1: 0.165 }, { kind: 'vwelt', x0: -0.12, x1: -0.109, h0: 0.05, h1: 0.165 }],
-      logo: { x0: 0.05, x1: 0.15, h0: 0.352, h1: 0.392 }, sleeve: SLEEVE_JACKET, sleeveEnd: 0.53, cuff: 'rib',
+      logo: { x0: 0.0374, x1: 0.132, h0: 0.364, h1: 0.402 }, sleeve: SLEEVE_JACKET, sleeveEnd: 0.53, cuff: 'rib',
     };
   }
   if (kind === 'blazer') {
@@ -300,7 +304,7 @@ export function buildHeroBody(ch, M, outfit = { kind: 'labcoat' }) {
   } else if (kind === 'jacket' || kind === 'blazer') {
     // crew-neck tee (jacket) / scoop-neck top (blazer)
     const neckH = kind === 'jacket'
-      ? (th) => mix(0.512, 0.532, smoothstep(0.0, 1.4, Math.abs(wrapPhi(th))))
+      ? (th) => mix(0.462, 0.532, smoothstep(0.0, 1.4, Math.abs(wrapPhi(th))))
       : (th) => mix(0.43, 0.5, Math.pow(smoothstep(0.0, 1.25, Math.abs(wrapPhi(th))), 0.9));
     const g = gridGeometry(72, 40, (u, v, out) => {
       const th = u * Math.PI * 2; const h = mix(0.085, neckH(th), v);
@@ -320,7 +324,11 @@ export function buildHeroBody(ch, M, outfit = { kind: 'labcoat' }) {
     const slim = kind === 'labcoat' ? 1 : female ? 0.86 : 0.9;
     const bare = kind === 'dress';
     if (!bare) {
-      const g = gridGeometry(64, 26, (u, v, out) => { const th = u * Math.PI * 2; const h = mix(-0.094, 0.112, v); ringPoint(TORSO, th, h, 0.0015, out); });
+      const tuck = kind === 'labcoat' ? 0 : 0.72; // short jackets / blazers show the crotch: no rounded bulb between the legs
+      const g = gridGeometry(64, 26, (u, v, out) => {
+        const th = u * Math.PI * 2; const h = mix(-0.094, 0.112, v); ringPoint(TORSO, th, h, 0.0015, out);
+        const k = 1 - tuck * smoothstep(-0.02, -0.085, h); out.x *= k; out.z = (out.z - 0.004) * k + 0.004;
+      });
       weldNormals(g); parts.pants.push(g);
       const wb = gridGeometry(64, 6, (u, v, out) => { const th = u * Math.PI * 2; const h = mix(0.086, 0.118, v); ringPoint(TORSO, th, h, 0.0045 * Math.sin(Math.PI * v) + 0.002, out); });
       weldNormals(wb); parts.pants.push(wb);
@@ -347,10 +355,11 @@ export function buildHeroBody(ch, M, outfit = { kind: 'labcoat' }) {
         const k = bare ? 1 : slim;
         a *= k; b *= k;
         if (sv > sCap) { a = 0; b = 0; }
+        const inner = bare || kind === 'labcoat' ? 0 : 0.021 * smoothstep(0.24, 0.02, sv); // inner thigh reaches the crotch seam
         const crease = bare ? 0 : smoothstep(0.08, 0.2, sv) * (0.0032 * Math.exp(-Math.pow(wrapPhi(ang) / 0.1, 2)) + 0.002 * Math.exp(-Math.pow((Math.abs(wrapPhi(ang)) - Math.PI) / 0.1, 2)));
         const [x, z] = superEllipse(ang, a, b, 2.15);
         const len = Math.hypot(x, z) || 1;
-        const lx = x + (x / len) * crease; const lz = z + (z / len) * crease + zo;
+        const lx = x + (x / len) * crease - s * inner * Math.pow(Math.max(0, -s * x / Math.max(a, 1e-4)), 1.6); const lz = z + (z / len) * crease + zo;
         const brk = bare ? 0 : 0.004 * smoothstep(0.76, 0.83, sv) * Math.max(0, Math.cos(ang));
         if (sv <= L_THIGH) out.set(lx, -sv, lz).applyMatrix4(th); else out.set(lx, -(sv - L_THIGH) + brk, lz).applyMatrix4(sh);
       });
@@ -388,7 +397,10 @@ export function buildHeroBody(ch, M, outfit = { kind: 'labcoat' }) {
   {
     const gap = cfg.gap; const HEM = cfg.hem; const TOP = cfg.top;
     const closed = (h) => gap(h) <= 0.0001;
-    const topAt = (th) => (cfg.topBack ? mix(TOP, cfg.topBack, smoothstep(1.3, 2.7, Math.abs(wrapPhi(th)))) : TOP);
+    const topAt = (th) => {
+      const a = Math.abs(wrapPhi(th)); const t = cfg.topBack ? mix(TOP, cfg.topBack, smoothstep(1.3, 2.7, a)) : TOP;
+      return cfg.neckV ? mix(cfg.neckV[0], t, Math.pow(smoothstep(0.0, cfg.neckV[1], a), cfg.neckV[2])) : t; // narrow V at the front
+    };
     const body = gridGeometry(110, Math.max(96, Math.round((TOP - HEM) * 120)), (u, v, out) => {
       const h = mix(HEM, topAt(u * Math.PI * 2), v);
       const ta = closed(h) ? 0 : xTheta(P, gap(h), h);
@@ -531,24 +543,50 @@ export function buildHeroBody(ch, M, outfit = { kind: 'labcoat' }) {
       const pts = []; for (let i = 0; i <= 64; i++) { const phi = c.C0 + (i / 64) * (Math.PI * 2 - 2 * c.C0); pts.push(cOuter(phi, new THREE.Vector3()).addScaledVector(ringNormal(P, phi, hOut(phi)), 0.0006)); }
       parts.collar.push(edgeTube(pts, 0.0024));
     } else if (cfg.collar === 'polo') {
-      // knit polo collar: stand + fall with pointed front ends; white tipping just inside the edge
-      const C0 = 0.2;
-      const back = (phi) => smoothstep(0.3, 2.2, Math.abs(wrapPhi(phi)));
-      const hIn = (phi) => mix(0.53, 0.578, back(phi));
-      const front = (phi) => 1 - smoothstep(0.2, 0.95, Math.abs(wrapPhi(phi)));
-      const outer = (phi, out) => { const pw = wrapPhi(phi); const f = front(phi); return onSurface(P, pw + Math.sign(pw) * 0.16 * f, mix(mix(0.49, 0.508, back(phi)), 0.452, f), 0.0042, out); };
-      const coll = rolledCollar({ phi0: C0, zc: -0.006, rIn: () => 0.0745, hIn, stand: (phi) => hIn(phi) - 0.494, outer });
+      // knit polo collar: a short stand on the jacket neckline, leaves that fall flat onto the chest with their points
+      // at PO.point, the outer edge rising to the shoulder line (PO.side) and round the back (PO.backH);
+      // white tipping along the outer edge
+      const PO = cfg.polo; const C0 = PO.c0;
+      const aw = (phi) => Math.abs(wrapPhi(phi));
+      const standH = (phi) => mix(PO.stand[0], PO.stand[1], smoothstep(0.4, 2.4, aw(phi)));
+      const lean = (phi) => mix(PO.lean[0], PO.lean[1], smoothstep(0.4, 2.0, aw(phi)));
+      const sideTh = xTheta(P, PO.side[0], PO.side[1]);
+      const edgeAt = (phi, out) => {
+        const a = aw(phi); const sg = Math.sign(wrapPhi(phi)) || 1;
+        if (a <= PO.sidePhi) {
+          const t = (a - C0) / (PO.sidePhi - C0); const h = mix(PO.point[1], PO.side[1], t); const [ra] = P.at(h, tmp);
+          return onSurface(P, sg * xTheta(P, Math.min(mix(PO.point[0], PO.side[0], t), ra * 0.995), h), h, 0.0042, out);
+        }
+        const t = (a - PO.sidePhi) / (Math.PI - PO.sidePhi);
+        return onSurface(P, sg * mix(sideTh, Math.PI, t), mix(PO.side[1], PO.backH, smoothstep(0.35, 1, t)), 0.0042, out); // stays narrow round the sides
+      };
+      const Pn = new THREE.Vector3(); const P1 = new THREE.Vector3(); const Ct = new THREE.Vector3(); const Pe = new THREE.Vector3(); const R = new THREE.Vector3();
+      const frame = (phi) => { // neckline point, horizontal outward direction, fold point (P1)
+        const th = wrapPhi(phi); const h0 = topAt(th);
+        ringPoint(P, th, h0, 0, Pn); R.copy(ringNormal(P, th, h0)); R.y = 0; R.normalize();
+        P1.copy(Pn).addScaledVector(R, 0.003 - lean(th)); P1.y += standH(th) + 0.0025;
+        edgeAt(phi, Pe); Ct.copy(P1).addScaledVector(R, 0.012); Ct.y += 0.004;
+      };
+      const leafAt = (k, out) => { const a = (1 - k) * (1 - k); const b = 2 * (1 - k) * k; const c = k * k; return out.set(a * P1.x + b * Ct.x + c * Pe.x, a * P1.y + b * Ct.y + c * Pe.y, a * P1.z + b * Ct.z + c * Pe.z); };
+      const coll = gridGeometry(80, 18, (u, v, out) => {
+        const phi = C0 + u * (Math.PI * 2 - 2 * C0); frame(phi);
+        if (v < 0.3) { const k = v / 0.3; const th = wrapPhi(phi); out.copy(Pn).addScaledVector(R, -0.0025 - lean(th) * k); out.y += -0.004 + (standH(th) + 0.004) * k; return; }
+        leafAt((v - 0.3) / 0.7, out);
+      });
       weldNormals(coll); parts.collar.push(coll);
       const edge = []; const tip = [];
-      for (let i = 0; i <= 72; i++) {
-        const phi = C0 + (i / 72) * (Math.PI * 2 - 2 * C0);
-        const e = outer(phi, new THREE.Vector3()); const n = ringNormal(P, phi, e.y - hipsY);
-        edge.push(e.clone().addScaledVector(n, 0.0005));
-        const fold = new THREE.Vector3(Math.sin(phi) * 0.0775, hipsY + hIn(phi) + 0.0025, Math.cos(phi) * 0.0775 * 0.97 - 0.006);
-        tip.push(e.clone().lerp(fold, 0.2).addScaledVector(n, 0.0028));
+      for (let i = 0; i <= 90; i++) {
+        const phi = C0 + (i / 90) * (Math.PI * 2 - 2 * C0); frame(phi);
+        const n = ringNormal(P, wrapPhi(phi), Pe.y - hipsY);
+        edge.push(Pe.clone().addScaledVector(n, 0.0005));
+        tip.push(leafAt(0.9, new THREE.Vector3()).addScaledVector(n, 0.0014));
       }
       parts.collar.push(edgeTube(edge, 0.0022));
-      const tipG = edgeTube(tip, 0.0011); applySkin(tipG, collarW); parts.tipping.push(tipG);
+      [C0, Math.PI * 2 - C0].forEach((phi) => { // crisp front edges of the leaves (fold → point)
+        frame(phi); const pts = []; for (let i = 0; i <= 10; i++) pts.push(leafAt(i / 10, new THREE.Vector3()));
+        parts.collar.push(edgeTube(pts, 0.0018));
+      });
+      const tipG = edgeTube(tip, 0.0016); applySkin(tipG, collarW); parts.tipping.push(tipG);
     }
   }
 
@@ -619,7 +657,9 @@ export function buildHeroBody(ch, M, outfit = { kind: 'labcoat' }) {
   });
 
   const skeleton = new THREE.Skeleton(bones);
-  Object.values(meshes).forEach((m) => { ch.root.add(m); m.bind(skeleton, m.matrixWorld); });
+  // bind with the mesh's real world matrix (it includes the character scale): a stale identity matrix
+  // here renders every garment at 1/scale around the feet, off its own skeleton (2–4 % for scale ≠ 1)
+  Object.values(meshes).forEach((m) => { ch.root.add(m); m.updateMatrixWorld(true); m.bind(skeleton, m.matrixWorld); });
   return { meshes, skeleton, shoes, fpvHidden };
 }
 
