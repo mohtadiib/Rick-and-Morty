@@ -170,6 +170,13 @@ export class HeroHead {
     this.beardLine = look.beardLine ? new Profile(look.beardLine) : BEARDLINE;
     this.hairLineP = look.hairLine ? new Profile(look.hairLine) : null;
     this.group = new THREE.Group(); this.group.name = 'head';
+    this._build();
+    this.group.traverse((o) => { if (o.isMesh) { o.castShadow = !o.userData.noShadow; o.receiveShadow = true; } });
+  }
+
+  /** Builds every part of the head (HeroHeadGLB overrides this to use a Blender-authored model). */
+  _build() {
+    const look = this.look;
     this._buildSkull();
     if (this.hairStyle !== 'hijab') this._buildEars();
     this._buildEyes();
@@ -177,7 +184,6 @@ export class HeroHead {
     this._buildMouth();
     if (this.hairStyle === 'hijab') this._buildHijab(); else this._buildHair();
     if (look.glasses) { if (look.glasses.style === 'acetate') this._buildGlassesAcetate(look.glasses); else this._buildGlasses(); }
-    this.group.traverse((o) => { if (o.isMesh) { o.castShadow = !o.userData.noShadow; o.receiveShadow = true; } });
   }
 
   // ------------------------------------------------------------------ skull + skin map

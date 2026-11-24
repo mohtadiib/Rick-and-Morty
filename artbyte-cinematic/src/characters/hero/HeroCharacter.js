@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { Character } from '../CharacterController.js';
 import { HeroHand } from './HeroHand.js';
 import { HeroHead } from './HeroHead.js';
+import { HeroHeadGLB } from './HeroHeadGLB.js';
+import { headModel } from './HeadModels.js';
 import { buildHeroBody } from './HeroBody.js';
 import { createHeroMaterials } from './HeroMaterials.js';
 import { lerp } from '../../core/utils.js';
@@ -25,10 +27,13 @@ export class HeroCharacter extends Character {
 
   _buildVisuals(spec, M) {
     const look = spec.look;
-    this.heroHead = new HeroHead({
+    // a Blender-authored head (look.headModel, preloaded) replaces the procedural one; without it the procedural head is used
+    const Head = headModel(look.headModel) ? HeroHeadGLB : HeroHead;
+    this.heroHead = new Head({
       skinColor: look.skin, hairColor: look.hair, beardColor: look.beard, irisColor: look.iris, lipColor: look.lips, glasses: look.glasses || false,
       hair: look.hairStyle || 'short', beard: look.beardStyle === undefined ? 'full' : look.beardStyle, female: spec.body === 'f', face: look.face,
       hairCfg: look.hairCfg, hairLine: look.hairLine, beardLine: look.beardLine, grain: look.grain,
+      model: look.headModel, modelScale: look.headScale ?? 1,
     }, M);
     this.heroHead.group.position.y = 0.1 - (look.headDrop ?? 0); this.heroHead.group.scale.setScalar(look.headScale ?? 1); this.head.add(this.heroHead.group);
     this.headGeo = this.heroHead.group;

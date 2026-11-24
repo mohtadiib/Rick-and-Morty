@@ -4,6 +4,7 @@ import { LOOKS } from '../effects/ColorGrading.js';
 import { createPharmacist } from '../characters/Pharmacist.js';
 import { createCustomer } from '../characters/Customer.js';
 import { createArtByteEmployee } from '../characters/ArtByteEmployee.js';
+import { preloadHeadModels } from '../characters/hero/HeadModels.js';
 
 /**
  * Character studio – a neutral grey cyclorama for look-development and continuity checks.
@@ -59,7 +60,8 @@ export async function startStudio(params) {
   const rim = new THREE.DirectionalLight(0xffffff, 1.2); rim.position.set(1.5, 2.6, -3); scene.add(rim);
 
   const who = params.get('studio') || 'pharmacist';
-  const char = who === 'customer' ? createCustomer() : who.startsWith('artbyte') ? createArtByteEmployee(+(who.split('-')[1] || 0), null) : createPharmacist();
+  if (!params.has('procedural')) await preloadHeadModels(); // ?procedural → compare with the procedural head
+  const char =who === 'customer' ? createCustomer() : who.startsWith('artbyte') ? createArtByteEmployee(+(who.split('-')[1] || 0), null) : createPharmacist();
   scene.add(char.root);
   const cam = renderer.camera;
 

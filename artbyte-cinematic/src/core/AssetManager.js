@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PRODUCTION } from '../config/production.js';
 import { SCREENS } from '../config/assets.js';
+import { preloadHeadModels } from '../characters/hero/HeadModels.js';
 
 /**
  * Loads and owns external assets: brand logo, application screenshots, fonts, optional GLB models.
@@ -31,9 +32,10 @@ export class AssetManager {
 
   async loadAll(onProgress = () => {}) {
     const tasks = [];
-    const total = Object.keys(SCREENS).length + 2;
+    const total = Object.keys(SCREENS).length + 3;
     let done = 0;
     const tick = () => { done++; this.progress = done / total; onProgress(this.progress); };
+    tasks.push(preloadHeadModels().then(tick)); // Blender-authored heads (characters fall back to procedural heads without them)
     // fonts (Arabic shaping in canvas textures requires the font to be ready)
     const fam = PRODUCTION.typography.canvasFamily;
     tasks.push(Promise.all(['400', '600', '700', '800'].map((w) => document.fonts.load(`${w} 40px ${fam}`, 'صيدلية ArtByte'))).catch(() => {}).then(tick));

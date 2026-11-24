@@ -165,7 +165,9 @@ artbyte-cinematic/
 
 ## 7. Characters
 
-The cast is **procedural** (no rigged GLB was supplied). Every character shares one rig
+The cast is **procedural** (no rigged GLB was supplied). The one exception is the pharmacist's head: it is
+built in Blender by a script in the repo (`tools/blender/pharmacist_head.py` → `public/assets/models/pharmacist-head.glb`,
+see `AGENTS.md` §6) and sits on the same rig; the procedural head remains the fallback. Every character shares one rig
 (`CharacterController`): a named bone hierarchy (`hips, torso, chest, neck, head,
 left/rightShoulder, left/rightArm, left/rightForearm, left/rightHand, left/rightThigh,
 left/rightShin, left/rightFoot` – also available as `char.joints`), analytic two-bone arm IK,

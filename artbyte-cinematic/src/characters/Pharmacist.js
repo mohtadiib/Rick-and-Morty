@@ -14,6 +14,8 @@ export const PHARMACIST_LOOK = {
   fabric: { specular: 0.4, sheen: 0.3 }, corneaEnv: 0.35, corneaIor: 1.45, eyeMatte: true, shoeGloss: [0.42, 0.12, 0.45],
   // head proportions measured against public/assets/style-reference/pharmacist-reference.jpg
   headScale: 1.1125, headDrop: 0.031,
+  // Blender-authored head (tools/blender/pharmacist_head.py); the procedural head below is the fallback
+  headModel: 'pharmacist',
   face: {
     lowC: 1.15, crown: 0.011, // short lower face, tall cranium
     lipW: 0.031, smileW: 0.18, lipU: 0.0032, lipL: 0.0072, muzzle: 0.0075,

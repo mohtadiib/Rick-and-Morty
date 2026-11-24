@@ -2,3 +2,6 @@ node_modules/
 dist/
 renders/
 *.log
+*.blend
+*.blend1
+__pycache__/

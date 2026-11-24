@@ -12,7 +12,37 @@ Newest entry first. Rules: see `AGENTS.md` §5.
 | 4 | Apply retiming + key gestures, gaze and cuts to phrases / emphasis words | Claude | waits for 1 and 3 |
 | 5 | Mouth (`face.talk`) only where a character speaks on screen, timed to the review notes | Claude | waits for 2 |
 | 6 | Character design changes: match the reference sheets (AGENTS §2.1); `docs/approved-looks/` is a baseline, not a freeze | either | active |
-| 7 | Decide whether characters may be authored in Blender and exported as GLB (changes the "procedural only" rule, AGENTS §1 and §2.4) | owner | open |
+| 7 | Decide whether characters may be authored in Blender and exported as GLB (changes the "procedural only" rule, AGENTS §1 and §2.4) | owner | decided: yes, by committed scripts (AGENTS §2.4, §6); pharmacist head done |
+
+## 2026-11-24 (2) · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn` (uncommitted)
+
+* **Pharmacist head authored in Blender** (owner's request; AGENTS §2.4 and §6): `tools/blender/pharmacist_head.py` →
+  `public/assets/models/pharmacist-head.glb` (5.9 MB, meshopt). Loaded by `HeadModels.js` and driven by `HeroHeadGLB.js`.
+  `HeroHead` only gained a `_build()` hook, so the other characters are unchanged. Main changes against the reference:
+  * eyes: lids carved into the skin over the eyeball, with blink and squint morphs;
+  * head shape: longer, wide jaw;
+  * reference-sized round glasses;
+  * mouth: upper-lip band, thin row of upper teeth, fuller and narrower lower lip, shaved oval and lobes around a soul
+    patch. Skin and beard follow the lips through the smile / frown / open morphs.
+* **Built live in the owner's Blender** through the "MCP for Blender" add-on socket (`tools/blender/live.mjs`,
+  `live_setup.py`), iterating on the owner's notes: beard too short under the chin, reference head longer with a wider
+  jaw, lips.
+* **Verified:**
+  * front silhouette vs the reference (`--measure`): hair top 69 / 68 px, beard bottom 717 / 719 px, width within
+    ±10 px from 100 to 640 px (about ±4 mm);
+  * studio stills: face, 3/4, eyes closed, talking, and a portrait framed like the reference
+    (`docs/collab/character-stills/pharmacist-blender-head.jpg` = before / after (face camera) / reference / after
+    framed like the reference);
+  * scene stills at 65.5, 76 and 178 s render with no console errors.
+* **Also in this session:** lead `artbyte-0` (lower lid higher, larger ears) and the engineer's chest logo moved clear
+  of the lapel (`HeroBody.js` blazer `logo`). Checked in studio stills only.
+* **Open:**
+  * full preview render not done;
+  * the closed-eye lid still shows a faint line;
+  * lip colours could go closer to the reference;
+  * the other characters are still procedural.
+  * The procedural head's mouth params in `Pharmacist.js` are now only used by the fallback.
+  * Playwright 1.64 is installed with `--no-save` (matches the cached Chromium 1248).
 
 ## 2026-11-24 · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn`
 

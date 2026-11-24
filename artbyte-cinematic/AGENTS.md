@@ -8,7 +8,8 @@ This file is the single source of truth for every coding agent working on the Ar
 
 A real-time Three.js 3D commercial (10 scenes, 194.2 s) for the ArtByte pharmacy management system,
 synced to a supplied Arabic voice-over. Everything is procedural (geometry, textures, materials), with
-no external 3D assets. Overview: `README.md`.
+no downloaded 3D assets; the pharmacist's head is authored in Blender by a script in this repo (§6).
+Overview: `README.md`.
 
 ```bash
 npm install                       # once
@@ -35,7 +36,10 @@ so check stills first and render the full video last.
    is played back as-is. Picture is synced to it, never the other way round.
 3. **Keep the character API.** Bone names, `this.joints` aliases, `state` fields, `handSocket()`,
    `placeInHand()`, the `HAND_POSES` names and socket offsets are used by all scenes.
-4. **Procedural only.** No downloaded models or textures unless the owner supplies them.
+4. **Procedural only.** No downloaded models or textures unless the owner supplies them. Owner decision
+   (2026-11-24): characters may be authored in Blender, but only by scripts committed in `tools/blender/`
+   that rebuild the GLB from scratch (no hand-edited or downloaded meshes). The procedural head stays as
+   the fallback when a GLB is missing. Started with the pharmacist's head (§6).
 5. **Git:** work on your own branch (`gemini/<topic>` or `claude/<topic>`), make small focused
    commits, and open a pull request. Never force-push or rewrite someone else's branch. Never commit
    secrets or API keys.
@@ -99,3 +103,30 @@ Times are seconds from the start of the WAV, accurate to ±0.05 s. `scene` is th
 
 When you finish a session, append an entry to `docs/collab/HANDOFF.md`: date, agent, branch or PR,
 what changed, how you verified it (stills and times), and what is next or blocked. Keep entries short.
+
+## 6. Blender-authored heads (`tools/blender/`)
+
+The pharmacist's head is built by `tools/blender/pharmacist_head.py` (bpy + numpy, no hand edits) and exported to
+`public/assets/models/pharmacist-head.glb` (meshopt-compressed). `HeadModels.js` preloads it and `HeroCharacter` then uses
+`HeroHeadGLB` instead of `HeroHead`. The model only carries geometry, uv, vertex colour and morphs; materials, gaze,
+blinks and brows come from the rig. Without the GLB, the procedural head is used.
+
+* **Frame:** head space as the rig uses it (x right, y up, z forward, metres, skull centre at the origin, `headScale` baked in).
+* **Nodes:** `skin` (morphs `blinkL`, `blinkR`, `squint`, `smile`, `frown`, `open`), `eye_L`/`eye_R` (origin at the eyeball
+  centre), `ear_*`, `brow_*`, `hair`, `beard` (morphs `smile`, `frown`, `open`), `lip_U`, `lip_L`, `teeth`, `mouth`
+  (morphs `smile`, `frown`, `open`), `rim_*`, `frame`, `lens_*`.
+* **Landmarks** come from a 2x crop of `pharmacist-reference.jpg` (1 crop px = 0.408 mm). `--measure` prints the front
+  silhouette against the reference row by row and writes `renders/blender/silhouette-overlay.png`.
+
+```bash
+# Blender is found via $env:BLENDER_EXE, then the Microsoft Store launcher alias
+powershell -File tools/blender/run.ps1 tools/blender/pharmacist_head.py                   # build + export the GLB
+powershell -File tools/blender/run.ps1 tools/blender/pharmacist_head.py --measure --no-export --ref renders/blender/ref-face.png
+powershell -File tools/blender/run.ps1 tools/blender/pharmacist_head.py --render --no-export --ref <crop.png>   # Cycles previews
+```
+
+**Live build in an open Blender** (the owner watches it being built): enable the "MCP for Blender" add-on
+(github.com/ahujasid/blender-mcp, telemetry off) so it listens on `localhost:9876`, then
+`node tools/blender/live.mjs exec tools/blender/live_setup.py` (loads the builder, reference image behind the head)
+and one stage per command: `node tools/blender/live.mjs code "import sys; m = sys.modules['ph_head']; m.B.skull(); m.preview_materials(); m.live_view()"`
+for `skull, eyes, ears, brows, hair, beard, lips, glasses, skin_detail`, then `m.export_glb(...)`.
