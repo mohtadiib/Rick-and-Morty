@@ -7,8 +7,9 @@ This file is the single source of truth for every coding agent working on the Ar
 ## 1. What this is
 
 A real-time Three.js 3D commercial (10 scenes, 194.2 s) for the ArtByte pharmacy management system,
-synced to a supplied Arabic voice-over. Everything is procedural (geometry, textures, materials), with
-no external 3D assets. Overview: `README.md`.
+synced to a supplied Arabic voice-over. Most of it is procedural (geometry, textures, materials). Licensed
+third-party models are allowed when the owner approves them and they are recorded in
+`docs/assets-licenses.md`. Overview: `README.md`.
 
 ```bash
 npm install                       # once
@@ -25,17 +26,22 @@ so check stills first and render the full video last.
 
 ## 2. Hard rules (do not break)
 
-1. **The reference images are the target.** Every character must match its sheet in
-   `public/assets/style-reference/` (pharmacist, customer, artbyte-jacket, artbyte-blazer) as closely as
-   possible. `docs/approved-looks/` records an older baseline, not a freeze. Change a character only to
-   move it closer to its reference, never to invent a new look, and show before / after / reference.
+1. **Characters are the owner's choice (decided 2026-11-24).** The sheets in
+   `public/assets/style-reference/` (pharmacist, customer, artbyte-jacket, artbyte-blazer) are a reference,
+   not a requirement. Characters may be redesigned, rebuilt in Blender, or replaced with licensed models
+   when the owner approves. `docs/approved-looks/` is a baseline, not a freeze. Every change must show
+   before / after, and the owner's brief for that change is the target.
    Shared code (`hero/HeroHead.js`, `HeroBody.js`, `HeroMaterials.js`) serves every character: put
    character-specific changes behind look options and check the others render as before.
 2. **The narration is never edited, regenerated or re-timed.** `public/assets/audio/narration-ar.wav`
    is played back as-is. Picture is synced to it, never the other way round.
 3. **Keep the character API.** Bone names, `this.joints` aliases, `state` fields, `handSocket()`,
    `placeInHand()`, the `HAND_POSES` names and socket offsets are used by all scenes.
-4. **Procedural only.** No downloaded models or textures unless the owner supplies them.
+4. **Procedural by default; licensed assets only when approved.** A downloaded model, texture or
+   animation may be used only when the owner has approved its source, and it is recorded in
+   `docs/assets-licenses.md` with its author, URL, licence, whether commercial use and credit are
+   required, and whether it may be modified. Models of real people need that person's consent for
+   commercial use, whatever the licence says. Never commit a file whose licence is not recorded.
 5. **Git:** work on your own branch (`gemini/<topic>` or `claude/<topic>`), make small focused
    commits, and open a pull request. Never force-push or rewrite someone else's branch. Never commit
    secrets or API keys.
