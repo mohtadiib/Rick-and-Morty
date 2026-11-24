@@ -14,16 +14,24 @@ Newest entry first. Rules: see `AGENTS.md` §5.
 | 6 | Character design changes: match the reference sheets (AGENTS §2.1); `docs/approved-looks/` is a baseline, not a freeze | either | active |
 | 7 | Decide whether characters may be authored in Blender and exported as GLB (changes the "procedural only" rule, AGENTS §1 and §2.4) | owner | decided: yes, by committed scripts (AGENTS §2.4, §6); pharmacist head done |
 
-## 2026-11-24 (2) · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn` (uncommitted)
+## 2026-11-24 (2) · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn` (commits `874c408`, `9f30945` + follow-up)
 
 * **Pharmacist head authored in Blender** (owner's request; AGENTS §2.4 and §6): `tools/blender/pharmacist_head.py` →
   `public/assets/models/pharmacist-head.glb` (5.9 MB, meshopt). Loaded by `HeadModels.js` and driven by `HeroHeadGLB.js`.
   `HeroHead` only gained a `_build()` hook, so the other characters are unchanged. Main changes against the reference:
   * eyes: lids carved into the skin over the eyeball, with blink and squint morphs;
-  * head shape: longer, wide jaw;
+  * head shape: longer, wide jaw; high forehead (the visible hairline now lies on the reference's, crop y 172;
+    `--measure` draws ours in green);
+  * nose shortened (noseY) and the moustache thicker and wider, so the nose base, moustache and lips sit on the
+    reference's rows within ~5 px (`--render --views front --ref …` writes `renders/blender/diff-blend.png`, the
+    reference at 50 % over the model, and `diff-edges.png`, reference edges red, model edges cyan);
+  * hair, moustache and beard fitted to the reference's dark regions with `diff-dark.png` (red = only in the reference,
+    cyan = only on the model) and its row table in `renders/blender/log.txt`: crisp hairline; cheek beard starting
+    ~40 px lower, skin in front of the ears; shaved lobes and soul patch within ~10 px from 600 to 630 px; a broad,
+    flat chin bottom. The red band at the front of the hair is the Blender preview's top light, not the shape.
   * reference-sized round glasses;
-  * mouth: upper-lip band, thin row of upper teeth, fuller and narrower lower lip, shaved oval and lobes around a soul
-    patch. Skin and beard follow the lips through the smile / frown / open morphs.
+  * mouth: a tall, wide upper-lip band, a thin row of upper teeth, a fuller and narrower lower lip, a shaved oval and
+    lobes around a soul patch. Skin and beard follow the lips through the smile / frown / open morphs.
 * **Built live in the owner's Blender** through the "MCP for Blender" add-on socket (`tools/blender/live.mjs`,
   `live_setup.py`), iterating on the owner's notes: beard too short under the chin, reference head longer with a wider
   jaw, lips.

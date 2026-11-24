@@ -35,17 +35,20 @@ def ry_(py): return 0.014 + (378 - py) * PX
 F = dict(                                  # face sculpt (design space, pre-scale) – FACE_MALE + pharmacist look.face
     rx=0.0805, ry=0.117, rz=0.1, eyeX=0.0330, eyeY=0.0125, jawNarrow=0.10, browRidge=0.0022, socket=0.0078,
     cheek=0.0045, jawAngle=0.004, noseBridge=0.0095, noseDorsum=0.0118, noseTip=0.0142, noseW=1.22, alae=0.0085, muzzle=0.0075,
-    chin=0.0075, chinDrop=0.009, lipW=0.0285, noseY=0.0, lowC=0.95, crown=0.0035, socketW=1.18, socketX=1.0,
+    chin=0.0075, chinDrop=0.009, lipW=0.0315, noseY=0.006, lowC=0.95, crown=0.0035, socketW=1.18, socketX=1.0,
     socketIn=0.0, lowW=(0.17, 0.03), cheekFull=0.0012, mouthY=-0.0565, chinW=1.6, crownW=0.08, temple=0.0055,
 )
 # shape vs the reference (front silhouette, tools: --measure): the reference head is the longer one with the wider jaw –
 # a lower crown, a longer lower face (lowC), a broad jaw that barely narrows to a wide chin (jawNarrow, lowW, chinW, jawAngle)
 # reference eye (2x crop): opening 33.7 x 17.7 mm, upper lid 10 mm above the iris centre, the lower lid just over the iris
 EYE = dict(R=0.0215, protrude=0.0075, a=0.0168, Hu=0.0100, Hl=0.0075, lidT=0.0012, clear=0.0009)   # metres, final scale
-HAIRLINE = [(0, 0.0815), (0.4, 0.0805), (0.62, 0.077), (0.78, 0.073), (0.86, 0.056), (0.93, 0.03), (1.0, 0.012), (1.15, 0.008),
-            (1.32, 0.015), (1.5, 0.03), (1.75, 0.032), (2.1, 0.018), (2.5, -0.035), (math.pi, -0.07)]
-BEARDLINE = [(0, -0.0418), (0.18, -0.0422), (0.33, -0.0445), (0.45, -0.047), (0.56, -0.046), (0.68, -0.041), (0.82, -0.0345), (0.95, -0.031),
-             (1.08, -0.029), (1.2, -0.031), (1.32, -0.034), (1.48, -0.045), (1.62, -0.075), (1.8, -0.2), (math.pi, -0.3)]
+# hairline (azimuth from the front → design height). The visible hair edge sits ~12.6 mm below these values (where the
+# tapered shell leaves the skin); measured with --measure (green line): the reference's high, flat forehead line is at crop
+# y ~172 with squared corners at the temples, so the front is ~19 mm higher than the procedural head's
+HAIRLINE = [(0, 0.1005), (0.4, 0.1000), (0.62, 0.0985), (0.78, 0.096), (0.86, 0.090), (0.93, 0.075), (1.0, 0.050), (1.08, 0.035),
+            (1.15, 0.028), (1.32, 0.030), (1.5, 0.035), (1.75, 0.032), (2.1, 0.018), (2.5, -0.035), (math.pi, -0.07)]
+BEARDLINE = [(0, -0.0355), (0.18, -0.0362), (0.33, -0.040), (0.45, -0.0455), (0.56, -0.050), (0.68, -0.055), (0.82, -0.055), (0.95, -0.053),
+             (1.08, -0.051), (1.2, -0.050), (1.32, -0.050), (1.48, -0.056), (1.62, -0.075), (1.8, -0.2), (math.pi, -0.3)]
 CUBE_CUTS = int(arg("--cuts", 110))       # quads per cube-sphere edge
 
 def sstep(a, b, v):
@@ -282,7 +285,8 @@ def shell(name, skin, P, Pd, mask, thick, noise_amp=0.0, seed=0, keep=0.003):
         nf.append(row)
     keepidx = np.array(sorted(vmap, key=vmap.get))
     nrm = vertex_normals(skin); jit = np.random.RandomState(seed).rand(len(P))
-    tk = thick * (mask ** 0.55) * (1 + noise_amp * (jit - 0.5)) - 0.0012 * (1 - sstep(0.0, 0.25, mask))
+    # grain: a fixed few-mm jitter (relative jitter made long spikes where the beard is thick, under the chin)
+    tk = thick * (mask ** 0.55) + noise_amp * 0.004 * (jit - 0.5) * sstep(0.0, 0.25, mask) - 0.0012 * (1 - sstep(0.0, 0.25, mask))
     offs = nrm[keepidx] * tk[keepidx, None]
     ob = make_object(name, P[keepidx] + offs, nf, spherical_uv(P[keepidx]))
     ob['_keep'] = len(keepidx)
@@ -290,12 +294,13 @@ def shell(name, skin, P, Pd, mask, thick, noise_amp=0.0, seed=0, keep=0.003):
 
 def masks(Pd):
     az = np.abs(np.arctan2(Pd[:, 0], Pd[:, 2])); x, y, z = Pd[:, 0], Pd[:, 1], Pd[:, 2]
-    hb = prof(HAIRLINE, az); hair = sstep(hb - 0.003 - 0.012, hb + 0.011, y)
+    hb = prof(HAIRLINE, az); hair = sstep(hb - 0.0135, hb - 0.0035, y)   # crisp: full thickness within 1 cm of the visible edge
     bb = prof(BEARDLINE, az); jaw = mix(-0.074, -0.108, sstep(-0.01, 0.075, z))
     under = sstep(jaw - BEARD['under'][0], jaw - BEARD['under'][1], y)   # the reference beard wraps under the chin
     up, dn, hw = MOUTH_HOLE        # shaved skin around the lips: the moustache sits on the upper lip in the reference
     dy = y - F['mouthY']   # boxy oval (superellipse, p = 3): the reference's shaved patch reaches out round the mouth corners
-    e = (np.abs(x / (hw * max(1, F['lipW'] / 0.0212))) ** 3 + np.abs(dy / np.where(dy > 0, up, dn)) ** 3) ** (1 / 3)
+    pe = np.where(dy > 0, 2.0, 3.0)   # rounded above: the moustache comes down over the mouth corners (reference)
+    e = (np.abs(x / (hw * max(1, F['lipW'] / 0.0212))) ** pe + np.abs(dy / np.where(dy > 0, up, dn)) ** pe) ** (1 / pe)
     beard = sstep(bb + 0.003, bb - 0.004, y) * sstep(0.86, 1.18, e) * sstep(-0.012, 0.004, z + 0.02) * under
     for s in (1, -1):
         # shaved lobes under the lower lip either side of the soul patch, which starts narrow under the lip and widens
@@ -347,11 +352,11 @@ EAR = dict(scale=1.1, sy=0.74, y=-0.0095, z=-0.008, inset=0.009, rot=-0.6)     #
 # reference smile: corners well up (crescent), the upper teeth showing (~4 mm parted at the rest smile), full lower lip
 # reference mouth (2x crop, same scale as our portrait): upper lip a 7 mm band across the whole mouth, lower lip 13 mm
 # but only ~83 % as wide, a thin (~3 mm) row of upper teeth, corners ~6 mm above the centre at the rest smile
-MOUTH = dict(smileW=0.16, smileCurve=0.0093, smileOpen=0.0036, lipU=0.0070, lipL=0.0128, bulgeU=0.0036, bulgeL=0.0058, teeth=0.006,
-             upperProfile=0.35, lowerProfile=1.0)
-SOUL = ((0.0110, -0.0150, 0.0100, 0.0068), (0.0185, -0.0235, 0.0090, 0.0098))   # lobes: x, y below the mouth line, radii (design)
-MOUTH_HOLE = (0.0094, 0.0148, 0.0245)   # beard opening around the mouth: up, down, half-width (design units)
-BEARD = dict(t=0.0042, chin=0.009, jaw=0.006, under=(0.042, 0.018))   # thickness, extra at chin / jaw sides, cover below the jaw (design units)
+MOUTH = dict(smileW=0.16, smileCurve=0.0093, smileOpen=0.0036, lipU=0.0095, lipL=0.0128, bulgeU=0.0045, bulgeL=0.0058, teeth=0.006,
+             upperProfile=0.2, lowerProfile=1.6)   # owner: upper lip taller and wider (full height to the corners), lower narrower
+SOUL = ((0.0205, -0.0205, 0.0110, 0.0080), (0.0160, -0.0310, 0.0105, 0.0075))   # lobes slant inwards down to the chin (reference)   # lobes: x, y below the mouth line, radii (design)
+MOUTH_HOLE = (0.0125, 0.0148, 0.0245)   # beard opening around the mouth: up, down, half-width (design units)
+BEARD = dict(t=0.0042, chin=0.011, jaw=0.006, corner=0.014, under=(0.042, 0.018))   # thickness, extra at chin / jaw sides, cover below the jaw (design units)
 
 def mouth_field(P, kind, origin):
     """Skin / beard displacement that follows the lips (final units in, out): 'smile' lifts and widens the mouth corners,
@@ -433,7 +438,8 @@ class Builder:
         """Full beard: fuller towards the chin and under it, so its outline drops below the jaw as in the reference."""
         x, y, z = self.Pd[:, 0], self.Pd[:, 1], self.Pd[:, 2]
         t = (BEARD['t'] + BEARD['chin'] * sstep(-0.07, -0.11, y) * sstep(-0.01, 0.05, z)
-             + BEARD['jaw'] * sstep(-0.06, -0.095, y) * sstep(0.015, 0.045, np.abs(x))) * HS     # squarer: fuller at the lower jaw corners
+             + BEARD['jaw'] * sstep(-0.06, -0.095, y) * sstep(0.015, 0.045, np.abs(x))
+             + BEARD['corner'] * sstep(-0.085, -0.11, y) * sstep(0.008, 0.03, np.abs(x)) * sstep(-0.01, 0.04, z)) * HS   # broad, flat chin bottom     # squarer: fuller at the lower jaw corners
         self.beard_shell = shell('beard', self.skin, self.P, self.Pd, self.beard_m, t, 0.5, 2)
 
     def glasses(self): glasses(self.surface_z)
@@ -491,7 +497,7 @@ class Builder:
         P, Pd = self.P, self.Pd
         sh = self.lid_shade * (1 - 0.42 * sstep(0.0, 0.7, self.beard_m)) * (1 - 0.30 * sstep(0.0, 0.8, self.hair_m))
         for c in self.centres: sh *= 1 - 0.07 * gs(P, (c[0], c[1] + 0.002, c[3]), (0.024, 0.016, 0.03))
-        for s in (1, -1): sh *= 1 - 0.55 * gs(Pd, (s * 0.0072 * F['noseW'], -0.041, 0.105), (0.0034, 0.0022, 0.02))
+        for s in (1, -1): sh *= 1 - 0.55 * gs(Pd, (s * 0.0072 * F['noseW'], -0.041 + F['noseY'], 0.105), (0.0034, 0.0022, 0.02))
         warm = gs(Pd, (0, -0.02, 0.1), (0.05, 0.03, 0.05))
         # skin around the lips takes on the lip colour (blends into the rig's lip meshes), as the procedural head's map did
         lip = 0.5 * gs(Pd, (0, F['mouthY'], 0.1), (0.022, 0.0075, 0.03)); ratio = np.array(srgb_to_lin(0x7a4134)) / np.array(srgb_to_lin(0x7a4a31))
@@ -519,9 +525,12 @@ class Builder:
         for name in ('smile', 'frown', 'open'): put(bob, name, keys[name][keep] + offs)
         log('hair faces', len(bpy.data.objects['hair'].data.polygons), 'beard faces', len(bpy.data.objects['beard'].data.polygons))
 
+LAST = None          # the last headless Builder (measure() reads its masks)
+
 def build():
+    global LAST
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    return Builder().all()
+    LAST = Builder(); return LAST.all()
 
 def export_glb(path):
     """Curves → meshes, one placeholder material per part (the rig assigns its own materials by node name), GLB out.
@@ -677,6 +686,56 @@ def overlay(ref_path, render_path, out_path, alpha=0.6):
     o = a.copy(); o[..., :3] = a[..., :3] * (1 - k) + b[..., :3] * k; o[..., 3] = 1
     out = bpy.data.images.new('overlay', w, h); out.pixels = o.reshape(-1).tolist(); out.filepath_raw = out_path; out.file_format = 'PNG'; out.save()
 
+def diff_overlay(ref_path, render_path, out_prefix):
+    """Differences you can see: <out>-blend.png (reference at 50 % over the model) and <out>-edges.png (the model with
+    the reference's feature edges in red and the model's own edges in cyan). Same framing as the reference crop."""
+    def load(p):
+        im = bpy.data.images.load(p, check_existing=False); w, h = im.size
+        return np.array(im.pixels[:], dtype=np.float32).reshape(h, w, 4)[::-1].copy()
+    ref = load(ref_path); ren = load(render_path)
+    bgc = np.median(np.concatenate([ref[:30, :30, :3].reshape(-1, 3), ref[:30, -30:, :3].reshape(-1, 3)]), 0)
+    a = ren[..., 3:4]; mod = ren[..., :3] * a + bgc * (1 - a)                   # model over the reference's grey
+    def edges(img, pct):
+        L = img[..., :3] @ np.array([0.299, 0.587, 0.114], dtype=np.float32)
+        gx = np.zeros_like(L); gy = np.zeros_like(L)
+        gx[:, 1:-1] = L[:, 2:] - L[:, :-2]; gy[1:-1] = L[2:] - L[:-2]
+        g = np.hypot(gx, gy); return g > np.percentile(g, pct)
+    er, em = edges(ref, 91), edges(np.concatenate([mod, np.ones_like(a)], -1), 91)
+    def save(arr, path):
+        out = np.concatenate([arr, np.ones(arr.shape[:2] + (1,), np.float32)], -1)
+        im = bpy.data.images.new('d', out.shape[1], out.shape[0]); im.pixels = out[::-1].reshape(-1).tolist()
+        im.filepath_raw = path; im.file_format = 'PNG'; im.save()
+    save(mod * 0.5 + ref[..., :3] * 0.5, out_prefix + '-blend.png')
+    e = mod * 0.75 + 0.25; e[em] = (0.0, 0.75, 0.9); e[er] = (0.95, 0.05, 0.05)
+    save(e, out_prefix + '-edges.png')
+    # hair / beard / moustache: dark regions of both, compared. red = only in the reference (missing on the model),
+    # cyan = only on the model (too much), grey = both. Rows below: dark runs (x from..to) in each, for the hair/beard band.
+    def dark(img, k):
+        # luminance relative to the forehead skin (the two images are lit differently), box-blurred over the hair grain
+        L = img[..., :3] @ np.array([0.299, 0.587, 0.114], dtype=np.float32)
+        c = np.pad(L, 3, mode='edge').cumsum(0).cumsum(1); c = np.pad(c, ((1, 0), (1, 0)))
+        B = (c[7:, 7:] - c[:-7, 7:] - c[7:, :-7] + c[:-7, :-7]) / 49.0
+        skin = np.median(L[230:260, 370:415])
+        d = B < k * skin; d[:, :150] = False; d[:, 650:] = False
+        return d
+    k = float(arg('--dark', 0.5))
+    dr, dm = dark(ref, k), dark(np.concatenate([mod, np.ones_like(a)], -1), k)
+    g = ref[..., :3] * 0.35 + 0.55
+    g[dr & dm] = (0.25, 0.25, 0.25); g[dr & ~dm] = (0.95, 0.1, 0.1); g[dm & ~dr] = (0.0, 0.7, 0.9)
+    save(g, out_prefix + '-dark.png')
+    def runs(row):
+        r, x = [], 0
+        while x < len(row):
+            if row[x]:
+                s = x
+                while x < len(row) and row[x]: x += 1
+                if x - s >= 6: r.append((s, x - 1))
+            x += 1
+        return r
+    for y in list(range(70, 200, 10)) + list(range(470, 730, 10)):
+        log(f'  dark y={y}: ref {runs(dr[y])}  model {runs(dm[y])}')
+    log('  dark pixels: ref only', int((dr & ~dm).sum()), 'model only', int((dm & ~dr).sum()), 'both', int((dr & dm).sum()))
+
 def measure(ref_path):
     """Front silhouette of the model vs the reference crop, row by row (crop pixels; 1 px = PX m): left/right edges,
     widths, top of the hair and bottom of the beard. Also writes silhouette-overlay.png (our outline in red on the reference)."""
@@ -704,6 +763,16 @@ def measure(ref_path):
     e = mm & np.roll(mm, 1, 0) & np.roll(mm, -1, 0) & np.roll(mm, 1, 1) & np.roll(mm, -1, 1); edge = mm & ~e
     edge = edge | np.roll(edge, 1, 1) | np.roll(edge, 1, 0)
     o = ref.copy(); o[edge, :3] = (1.0, 0.05, 0.05); o[..., 3] = 1
+    if LAST is not None:   # our visible hairline (where the hair shell leaves the skin, mask ~0.025) in green
+        hm, P = LAST.hair_m, LAST.P; sel = (hm > 0.015) & (hm < 0.04) & (P[:, 2] > 0.02)
+        xs = np.clip((392 + P[sel, 0] / PX).astype(int), 1, 798); ys = np.clip((378 - (P[sel, 1] - 0.014) / PX).astype(int), 1, 838)
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1): o[ys + dy, xs + dx, :3] = (0.1, 1.0, 0.2)
+        for y in range(150, 260, 10):
+            xs_row = xs[np.abs(ys - y) <= 2]; xs_row = xs_row[np.abs(xs_row - 392) < 220]
+            if len(xs_row): log(f'  hairline y={y}: model x {xs_row.min()}..{xs_row.max()}')
+        c = sel & (np.abs(P[:, 0]) < 0.01)
+        if c.any(): log('  hairline at the centre (crop y):', int(np.median(378 - (P[c, 1] - 0.014) / PX)))
     out = bpy.data.images.new('sil', o.shape[1], o.shape[0]); out.pixels = o[::-1].reshape(-1).tolist()
     out.filepath_raw = os.path.join(OUT, 'silhouette-overlay.png'); out.file_format = 'PNG'; out.save()
 
@@ -711,13 +780,19 @@ if __name__ == '__main__':
     try:
         skin = build()
         if '--measure' in ARGS: measure(arg('--ref'))
-        for kv in (arg('--keys') or '').split(','):              # e.g. --keys blinkL=1,smile=0.6 (preview only)
-            if '=' in kv: k, v = kv.split('='); skin.data.shape_keys.key_blocks[k].value = float(v)
+        for kv in (arg('--keys') or '').split(','):              # e.g. --keys blinkL=1,smile=0.6 (preview only, every part with that key)
+            if '=' not in kv: continue
+            k, v = kv.split('=')
+            for ob in coll().objects:
+                sk = getattr(ob.data, 'shape_keys', None)
+                if sk and k in sk.key_blocks: sk.key_blocks[k].value = float(v)
         if '--render' in ARGS:
             views = tuple(arg('--views', 'front,q34').split(','))
             render_views(views)
             ref = arg('--ref')
-            if ref and 'front' in views: overlay(ref, os.path.join(OUT, 'front.png'), os.path.join(OUT, 'overlay-front.png'))
+            if ref and 'front' in views:
+                overlay(ref, os.path.join(OUT, 'front.png'), os.path.join(OUT, 'overlay-front.png'))
+                diff_overlay(ref, os.path.join(OUT, 'front.png'), os.path.join(OUT, 'diff'))
         for kb in (skin.data.shape_keys.key_blocks if skin.data.shape_keys else []): kb.value = 0.0
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, 'pharmacist_head.blend'))
         if '--no-export' not in ARGS:
