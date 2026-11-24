@@ -18,7 +18,7 @@ import { ShelfSystem, SHELF_FRONT_Z, BACK_WALL_Z, BAY_CATEGORIES, BAYS_X0, BAY_W
 export const LAYOUT = {
   room: { x0: -6, x1: 6, z0: -3.6, z1: 4.0, h: 3.2 },
   door: { x0: -1.6, x1: -0.4, h: 2.3, z: 4.0 },
-  counter: { x0: -3.0, x1: 1.2, workX1: 3.3, z0: -1.5, z1: -0.9, h: 1.0 },
+  counter: { x0: -3.0, x1: 1.2, workX1: 3.3, z0: -1.5, z1: -0.9, h: 1.0, laptop: [2.12, -1.2] }, // laptop: where scenes 04–10 set it down
   pharmacistSpot: new THREE.Vector3(-0.6, 0, -1.95),
   customerSpot: new THREE.Vector3(-0.6, 0, -0.42),
   desk: { x0: 3.35, x1: 5.65, z0: -3.6, z1: -2.82, h: 0.76 },

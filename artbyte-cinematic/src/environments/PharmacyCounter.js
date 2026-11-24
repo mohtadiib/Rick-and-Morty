@@ -82,10 +82,22 @@ export class PharmacyCounter {
     this.clutter = new THREE.Group(); this.clutter.name = 'counter-clutter'; this.group.add(this.clutter);
     const cr = rng(9);
     const paperMat = new THREE.MeshStandardMaterial({ color: 0xf4f1e8, roughness: 0.9 });
-    for (let i = 0; i < 9; i++) {
+    // loose sheets keep clear of the cash drawer and of the spot where the team sets the laptop down
+    // (sheets used to pass straight through the laptop base)
+    const keepOut = [[wx0 + 0.45, zc, 0.24, 0.24], [c.laptop[0], c.laptop[1], 0.2, 0.15]]; // [x, z, half-w, half-d] incl. margin
+    const overlaps = (x, z, ry) => keepOut.some(([kx, kz, hw, hd]) => { // separating-axis test: sheet (rotated) vs box
+      const ax = [[Math.cos(ry), -Math.sin(ry)], [Math.sin(ry), Math.cos(ry)]]; const he = [0.105, 0.1485]; const d = [kx - x, kz - z];
+      if (Math.abs(d[0]) > hw + he[0] * Math.abs(ax[0][0]) + he[1] * Math.abs(ax[1][0])) return false;
+      if (Math.abs(d[1]) > hd + he[0] * Math.abs(ax[0][1]) + he[1] * Math.abs(ax[1][1])) return false;
+      for (let k = 0; k < 2; k++) { const a = ax[k]; if (Math.abs(d[0] * a[0] + d[1] * a[1]) > he[k] + hw * Math.abs(a[0]) + hd * Math.abs(a[1])) return false; }
+      return true;
+    });
+    for (let i = 0, tries = 0; i < 9 && tries < 400; tries++) {
+      const x = wx0 + cr.range(0.05, wW - 0.2); const z = zc + cr.range(-0.12, 0.12); const ry = cr.range(-0.6, 0.6);
+      if (overlaps(x, z, ry)) continue;
       const p = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.002, 0.297), paperMat);
-      p.position.set(wx0 + cr.range(0.2, 1.6), H + 0.002 + i * 0.002, zc + cr.range(-0.12, 0.12)); p.rotation.y = cr.range(-0.6, 0.6); p.receiveShadow = true; p.castShadow = true;
-      this.clutter.add(p);
+      p.position.set(x, H + 0.002 + i * 0.002, z); p.rotation.y = ry; p.receiveShadow = true; p.castShadow = true;
+      this.clutter.add(p); i++;
     }
     const loose = [];
     for (let i = 0; i < 7; i++) loose.push({ tile: cr.int(1, 63), p: new THREE.Vector3(c.x0 + cr.range(0.4, 3.6), H + 0.03, zc + cr.range(-0.15, 0.15)), r: new THREE.Euler(0, cr.range(0, 6.28), cr() < 0.5 ? Math.PI / 2 : 0), s: [0.1, 0.06, 0.035] });
