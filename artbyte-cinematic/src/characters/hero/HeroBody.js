@@ -108,7 +108,7 @@ function outerConfig(kind) {
       lapels: { brk: 0.12, w: 0.052, top0: 0.478, top1: 0.442 },
       collar: 'notched', collarCfg: { C0: 0.62, rIn: [0.069, 0.07], hIn: [0.49, 0.552], base: 0.478, out: [0.456, 0.49] },
       pockets: [{ kind: 'flap', x0: 0.045, x1: 0.125, h0: 0.0, h1: 0.022 }, { kind: 'flap', x0: -0.125, x1: -0.045, h0: 0.0, h1: 0.022 }],
-      logo: { x0: 0.055, x1: 0.135, h0: 0.335, h1: 0.365 }, sleeve: SLEEVE_BLAZER_F, sleeveEnd: 0.512, cuff: 'hem',
+      logo: { x0: 0.1, x1: 0.16, h0: 0.349, h1: 0.368 }, sleeve: SLEEVE_BLAZER_F, sleeveEnd: 0.512, cuff: 'hem',
     };
   }
   if (kind === 'dress') {
