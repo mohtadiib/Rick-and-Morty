@@ -27,10 +27,8 @@ export const PRODUCTION = {
     secondary: '#595959',
   },
   typography: {
-    // Al-Jazeera is preferred where licensed: drop the font files into public/assets/fonts,
-    // uncomment the @font-face rules in src/ui/fonts.css, then change both families below.
-    family: "'Cairo', 'Segoe UI', Tahoma, sans-serif",
-    canvasFamily: 'Cairo',
+    family: "'Al-Jazeera', 'Segoe UI', Tahoma, sans-serif",
+    canvasFamily: 'Al-Jazeera',
   },
   // Temporary sample dashboards for modules without supplied screenshots.
   // They are always stamped as PLACEHOLDER. Set to false to omit them from the cut.

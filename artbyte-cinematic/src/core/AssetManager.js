@@ -38,7 +38,7 @@ export class AssetManager {
     tasks.push(preloadHeadModels().then(tick)); // Blender-authored heads (characters fall back to procedural heads without them)
     // fonts (Arabic shaping in canvas textures requires the font to be ready)
     const fam = PRODUCTION.typography.canvasFamily;
-    tasks.push(Promise.all(['400', '600', '700', '800'].map((w) => document.fonts.load(`${w} 40px ${fam}`, 'صيدلية ArtByte'))).catch(() => {}).then(tick));
+    tasks.push(Promise.all(['400', '600', '700', '800'].map((w) => document.fonts.load(`${w} 40px "${fam}"`, 'صيدلية ArtByte'))).catch(() => {}).then(tick));
     tasks.push(this.setLogo(PRODUCTION.brand.logo).then(tick));
     for (const [id, s] of Object.entries(SCREENS)) {
       if (!s.src) { tick(); continue; }

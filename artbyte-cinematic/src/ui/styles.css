@@ -9,7 +9,7 @@
   --accent: #3b82f6;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: #000; color: #fff; overflow: hidden; font-family: 'Cairo', system-ui, sans-serif; }
+html, body { margin: 0; height: 100%; background: #000; color: #fff; overflow: hidden; font-family: 'Al-Jazeera', 'Segoe UI', Tahoma, system-ui, sans-serif; }
 #stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #000; }
 body.dev #stage { bottom: var(--panel-h, 250px); }
 #frame { position: relative; overflow: hidden; background: #000; }
@@ -37,7 +37,7 @@ body.dev #stage { bottom: var(--panel-h, 250px); }
 .ov-end { inset: 0; display: flex; align-items: center; justify-content: center; }
 .endcard { display: flex; flex-direction: column; align-items: center; gap: 1.2cqh; }
 .endcard img { width: 21cqh; height: 21cqh; object-fit: contain; }
-.endcard .brand { font-family: 'Cairo', sans-serif; font-weight: 800; font-size: 9cqh; letter-spacing: .02em; color: #fff; direction: ltr; line-height: 1; }
+.endcard .brand { font-family: 'Al-Jazeera', sans-serif; font-weight: 800; font-size: 9cqh; letter-spacing: .02em; color: #fff; direction: ltr; line-height: 1; }
 .endcard .brand b { color: #3d8bff; font-weight: 800; }
 .endcard .slogan { font-weight: 700; font-size: 4.2cqh; color: rgba(255,255,255,.95); direction: rtl; }
 .endcard .rule { height: 2px; width: 30cqh; background: linear-gradient(90deg, transparent, #3d8bff, transparent); }
@@ -52,7 +52,7 @@ body.dev #stage { bottom: var(--panel-h, 250px); }
 .loader-text { margin: 0; font-weight: 600; }
 #start-gate { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 40; background: rgba(0,0,0,.35); }
 #start-gate[hidden] { display: none; }
-#start-btn { font: 700 20px 'Cairo', sans-serif; padding: 14px 34px; border-radius: 999px; border: 0; background: var(--ab-blue); color: #fff; cursor: pointer; box-shadow: 0 10px 40px rgba(0,102,255,.45); }
+#start-btn { font: 700 20px 'Al-Jazeera', sans-serif; padding: 14px 34px; border-radius: 999px; border: 0; background: var(--ab-blue); color: #fff; cursor: pointer; box-shadow: 0 10px 40px rgba(0,102,255,.45); }
 
 /* ---------- production panel ---------- */
 #dev-ui { position: fixed; left: 0; right: 0; bottom: 0; height: var(--panel-h, 250px); background: var(--panel-bg); color: var(--panel-fg); font: 12px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; border-top: 1px solid var(--panel-line); display: none; flex-direction: column; z-index: 30; }

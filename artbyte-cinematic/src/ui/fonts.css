@@ -1,20 +1,10 @@
 /*
- * Optional brand font.
- * The production uses Cairo (OFL, bundled via @fontsource). If you hold a licence for
- * Al-Jazeera Arabic, place the files in public/assets/fonts/ and uncomment below, then set
- * PRODUCTION.typography.family / canvasFamily to 'Al-Jazeera' in src/config/production.js.
+ * Brand font: Al-Jazeera Arabic (public/assets/fonts/Aljazeera.ttf).
  */
-/*
 @font-face {
   font-family: 'Al-Jazeera';
-  src: url('/assets/fonts/Al-Jazeera-Arabic-Bold.woff2') format('woff2');
-  font-weight: 700 800;
+  src: url('/assets/fonts/Aljazeera.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
   font-display: block;
 }
-@font-face {
-  font-family: 'Al-Jazeera';
-  src: url('/assets/fonts/Al-Jazeera-Arabic-Regular.woff2') format('woff2');
-  font-weight: 400 600;
-  font-display: block;
-}
-*/
