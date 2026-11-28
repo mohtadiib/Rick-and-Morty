@@ -11,8 +11,9 @@ Newest entry first. Rules: see `AGENTS.md` §5.
 | 3 | Propose scene retiming from the transcript (new `start`/`duration` per scene) | Gemini | done (2026-11-27) |
 | 4 | Apply retiming + key gestures, gaze and cuts to phrases / emphasis words | Gemini | done (`Scene01`–`Scene10`, `src/config/scenes.js`) |
 | 5 | Mouth (`face.talk`) only where a character speaks on screen, timed to the review notes | either | aligned to on-screen dialogue slots |
-| 6 | Character design changes: match the reference sheets (AGENTS §2.1); `docs/approved-looks/` is a baseline, not a freeze | either | active |
-| 7 | Decide whether characters may be authored in Blender and exported as GLB (changes the "procedural only" rule, AGENTS §1 and §2.4) | owner | decided: yes, by committed scripts (AGENTS §2.4, §6); pharmacist head done |
+| 6 | Character design: the owner's brief for each change (reference sheets are a reference, AGENTS §2.1); `docs/approved-looks/` is a baseline, not a freeze | either | active |
+| 7 | Rule changed by the owner on 2026-11-24: characters may be rebuilt in Blender (by committed scripts, AGENTS §2.4, §6) or replaced with licensed models. Next: owner picks the route per character | owner | decided; pharmacist and customer heads built in Blender |
+| 8 | Record every licensed asset in `docs/assets-licenses.md` before committing it | either | open |
 
 ## 2026-11-28 (2) · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn` (not committed yet)
 
@@ -238,6 +239,12 @@ graded (faded) haircut; then the bump at the nape and the head blending into the
   * the other characters are still procedural.
   * The procedural head's mouth params in `Pharmacist.js` are now only used by the fallback.
   * Playwright 1.64 is installed with `--no-save` (matches the cached Chromium 1248).
+
+## 2026-11-24 · Claude · rule change
+
+* The owner changed AGENTS.md §2 rules 1 and 4 (and §1): the reference sheets are a reference, not a requirement; characters may be rebuilt in Blender or replaced with licensed models when the owner approves.
+* No model has been chosen yet. The uploaded test files (a photo scan and a textured doctor model) are not in the repo and must not be committed before their licence and source are recorded in `docs/assets-licenses.md`.
+* Tasks #17 to #19 (matching customer and engineer, lead's face) wait for the owner's choice of route per character.
 
 ## 2026-11-24 · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn`
 
