@@ -15,7 +15,7 @@ Newest entry first. Rules: see `AGENTS.md` §5.
 | 7 | Rule changed by the owner on 2026-11-24: characters may be rebuilt in Blender (by committed scripts, AGENTS §2.4, §6) or replaced with licensed models. Next: owner picks the route per character | owner | decided; pharmacist and customer heads built in Blender |
 | 8 | Record every licensed asset in `docs/assets-licenses.md` before committing it | either | open |
 
-## 2026-11-28 (2) · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn` (not committed yet)
+## 2026-11-28 (2) · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn` (commit `f73da66`)
 
 Owner request: the pharmacist's jaw exactly as on the sheet; the lips the same size as the sheet's and blended into the skin.
 
@@ -63,7 +63,7 @@ Owner request: the pharmacist's jaw exactly as on the sheet; the lips the same s
   * Orthographic Blender `--measure` (`renders/customer/fit-combo.png`): back width within `0.0..3.0 mm` (`v=50..155`), front width within `1.4..7.0 mm` (`0.7..3.5 mm`/side), side nose/lips/chin/hijab contours locked to reference lines.
   * Three.js Studio (`renders/studio-customer/after/{front,three-quarter,side,back,face,face-34,hands,walk,sit}.png`): 0 console/page errors, clean cornea & smooth hijab crown/forehead.
 
-## 2026-11-27 (4) · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn` (not committed yet)
+## 2026-11-27 (4) · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn` (commit `f73da66`)
 
 Owner requests: reference lines for the glasses, eyes and mouth (a graded opening with lines at the corners, not a gap); a
 graded (faded) haircut; then the bump at the nape and the head blending into the neck as on the sheet.
@@ -113,7 +113,7 @@ graded (faded) haircut; then the bump at the nape and the head blending into the
   * The model's ear top sits ~3 mm below the sheet's, so the arm dips 3 mm to rest on it.
   * Full video not re-rendered. The live Blender was not updated: another session was working in it.
 
-## 2026-11-27 (3) · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn` (not committed yet)
+## 2026-11-27 (3) · Claude · branch `claude/artbyte-pharmacy-3d-commercial-irc7qn` (commit `f73da66`)
 
 * **Pharmacist beard and moustache fitted to drawn reference lines** (owner request). `BEARD_LINES` in
   `tools/blender/pharmacist_head.py` holds lines traced on the turnaround's Front Face / Left Profile panels, mapped into
