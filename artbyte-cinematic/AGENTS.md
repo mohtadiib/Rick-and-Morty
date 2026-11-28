@@ -117,12 +117,35 @@ blinks and brows come from the rig. Without the GLB, the procedural head is used
   (morphs `smile`, `frown`, `open`), `rim_*`, `frame`, `lens_*`.
 * **Landmarks** come from a 2x crop of `pharmacist-reference.jpg` (1 crop px = 0.408 mm). `--measure` prints the front
   silhouette against the reference row by row and writes `renders/blender/silhouette-overlay.png`.
+* **Beard and moustache** follow `BEARD_LINES`: reference lines traced on the turnaround's Front Face and Left Profile
+  panels, mapped into the model's own front / side render frames, at the sheet's smile (`REF_SMILE`). Change the beard by
+  editing those lines. `--beard-lines <sheet>` draws them over the model (`renders/blender/beard-lines*.png|jpg`) and logs
+  each line's distance to the beard edge in mm; `m.live_beard_lines()` draws them in a live Blender.
+* **Eyes, glasses and mouth** follow `FACE_LINES` (lid margins, iris, the glasses rim as a fitted superellipse, bridge, the
+  mouth's opening and the crease to its corners; `FACE_LINES_SIDE`: the glasses arm), traced on the same mapped panels.
+  The lip, teeth and mouth-interior meshes carry vertex colours (gradients), which `HeroHeadGLB` uses when present. Lips
+  with colours get the skin's material: their colours are the lip tint on the skin (`LIP_TINT`), stored divided by the
+  mesh's `lipGain` extra because glTF vertex colours stop at 1. Lip size comes from the lines (`lip_thickness`).
+* **Jaw** follows `FACE_LINES jaw` (the beard's outer edge in the front panel): `lock_jaw` (`JAW_FIT`: stretch below a
+  row, then a smooth per-row width scale, both in front of the ear only) and `behind_beard` (no skin outside the beard).
+  The sheet's profile panel has a shorter chin than its front and 3/4 panels; the front wins.
+* **Haircut fade** follows `HAIR_FADE`: the nape and behind-ear fade lines (dense / skin) from the profile and back panels,
+  and density tables for the temples and sideburns. Below the dense hair the skin is painted with a stubble gradient.
+* **Head into neck:** `blend_neck` turns the head's lower back and sides into a skirt that enters the rig's neck.
+  `NECK_RINGS` is the rig's neck in the head frame; re-measure it with `node tools/blender/neck_probe.mjs` whenever the
+  neck (`HeroBody` `NECK_M`, `Pharmacist.js` `outfit.neck`) changes.
+* `--face-lines <sheet>` draws all of these over the model (`renders/blender/face-lines*.png|jpg`) and logs the mm per line;
+  `m.live_face_lines()` draws them in a live Blender.
 
 ```bash
 # Blender is found via $env:BLENDER_EXE, then the Microsoft Store launcher alias
 powershell -File tools/blender/run.ps1 tools/blender/pharmacist_head.py                   # build + export the GLB
 powershell -File tools/blender/run.ps1 tools/blender/pharmacist_head.py --measure --no-export --ref renders/blender/ref-face.png
 powershell -File tools/blender/run.ps1 tools/blender/pharmacist_head.py --render --no-export --ref <crop.png>   # Cycles previews
+# facial-hair reference lines vs the model (the sheet path must be absolute: Blender runs from another folder)
+$sheet = (Resolve-Path public\assets\style-reference\pharmacist-turnaround.webp).Path
+powershell -File tools/blender/run.ps1 tools/blender/pharmacist_head.py --no-export --beard-lines $sheet --turnaround $sheet
+powershell -File tools/blender/run.ps1 tools/blender/pharmacist_head.py --no-export --face-lines $sheet    # eyes, glasses, mouth, fade
 ```
 
 **Live build in an open Blender** (the owner watches it being built): enable the "MCP for Blender" add-on
