@@ -10,7 +10,8 @@ export const CUSTOMER_LOOK = {
   hair: 0x141212, beard: 0x141212, brow: 0x16110f, iris: 0x2e1a0f,
   coat: 0x14695a, shirt: 0xf2f2f0, trousers: 0x14695a, shoes: 0x2a2e36, hijab: 0xe6c88e,
   fabric: { roughness: 0.84, sheen: 0.15, sheenColor: 0x2a8a74, specular: 0.25 }, headScale: 1.11, headDrop: 0.016,
-  hairStyle: 'hijab', beardStyle: false,
+  hairStyle: 'hijab', beardStyle: false, headModel: 'customer',
+  face: { irisR: 0.175, pupilR: 0.088 },
   outfit: { kind: 'dress', hijab: true, shoes: 'flat', neckScale: 1.04 },
 };
 

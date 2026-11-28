@@ -8,6 +8,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
  */
 export const HEAD_MODELS = {
   pharmacist: './assets/models/pharmacist-head.glb',
+  customer: './assets/models/customer-head.glb',
 };
 
 const cache = new Map();
