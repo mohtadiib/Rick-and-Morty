@@ -136,7 +136,10 @@ class App {
           if (opts.heads) app.world.characters.forEach((c) => { c.headGeo.visible = true; c.neckMesh.visible = true; });
           app.world.director.set(opts.shot); app.world.director.apply(t);
         }
-        app.renderer.render(t); return new Promise((r) => requestAnimationFrame(() => r(true)));
+        app.renderer.render(t);
+        const gl = app.renderer.renderer.getContext();
+        if (gl && gl.finish) gl.finish();
+        return true;
       },
       async sfxWavBase64() {
         const buf = await app.sfx.renderOffline(app.timeline.allCues(), app.timeline.duration);
