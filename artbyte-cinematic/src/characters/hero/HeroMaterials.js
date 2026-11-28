@@ -9,9 +9,10 @@ import { skinNormalMap, weaveNormalMap, hairNormalMap, leatherNormalMap, textTex
 export function createHeroMaterials(look) {
   const skinN = skinNormalMap(); const weave = weaveNormalMap('plain'); const twill = weaveNormalMap('twill'); const hairN = hairNormalMap();
   const rep = (t, x, y) => { const c = t.clone(); c.repeat.set(x, y); c.needsUpdate = true; return c; };
+  const sn = look.skinNormal ?? 0.22;
   const skinBase = {
-    roughness: 0.52, metalness: 0, sheen: 0.25, sheenColor: new THREE.Color(look.skinSheen ?? 0xb87b56), sheenRoughness: 0.7,
-    specularIntensity: 0.45, normalScale: new THREE.Vector2(0.22, 0.22),
+    roughness: look.skinRoughness ?? 0.52, metalness: 0, sheen: 0.25, sheenColor: new THREE.Color(look.skinSheen ?? 0xb87b56), sheenRoughness: 0.7,
+    specularIntensity: 0.45, normalScale: new THREE.Vector2(sn, sn),
   };
   const fabric = look.fabric || {}; // per-outfit tweaks of the outer garment
   const coatColor = new THREE.Color(look.coat);

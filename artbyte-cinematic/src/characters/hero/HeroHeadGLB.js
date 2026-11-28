@@ -29,14 +29,20 @@ export class HeroHeadGLB extends HeroHead {
     ['ear_L', 'ear_R'].forEach((n) => set(n, M.ear));
     ['brow_L', 'brow_R'].forEach((n) => set(n, M.brow, true));
     set('hair', M.hair); set('beard', M.beard);
+    if (node.hijab) {
+      const hm = node.hijab.geometry.attributes.color ? (() => { const c = M.hijab.clone(); c.vertexColors = true; return c; })() : M.hijab;
+      set('hijab', hm);
+    }
     ['rim_L', 'rim_R', 'frame'].forEach((n) => set(n, M.frameAcetate));
     ['lens_L', 'lens_R'].forEach((n) => { set(n, M.lens, true); if (node[n]) node[n].renderOrder = 3; });
     this.skull = node.skin; this.skin = node.skin;
     this._ray = new THREE.Raycaster();
     this.morph = node.skin.morphTargetDictionary || {};
 
-    // eyes: the eyeball nodes turn for gaze; cornea bulge as in HeroHead
-    const eyeR = node.eye_L.geometry.boundingSphere?.radius ?? (node.eye_L.geometry.computeBoundingSphere(), node.eye_L.geometry.boundingSphere.radius);
+    // eyes: the eyeball nodes turn for gaze; cornea bulge as in HeroHead (use actual sphere radius, not glTF box diagonal)
+    node.eye_L.geometry.computeBoundingBox();
+    const eyeBox = node.eye_L.geometry.boundingBox;
+    const eyeR = 0.5 * (eyeBox.max.y - eyeBox.min.y);
     M.sclera.map = eyeTexture(look.irisColor, this.F.irisR ?? 0.1257, this.F.pupilR ?? 0.0525); M.sclera.needsUpdate = true;
     // cornea: a cap over the iris only, kept under the lid skin (the lids sit ~1 mm above the eyeball here)
     const corneaGeo = new THREE.SphereGeometry(eyeR * 1.004, 40, 12, 0, Math.PI * 2, 0, 0.6); corneaGeo.rotateX(Math.PI / 2);
@@ -56,10 +62,21 @@ export class HeroHeadGLB extends HeroHead {
     // mouth: authored in Blender (lip_U, lip_L, teeth, mouth with morphs smile / frown / open) when the model has it,
     // otherwise HeroHead's dynamic lips fitted to this skin
     if (node.lip_U) {
-      // the reference's lower lip is fuller and lighter than the upper one
-      const lowerLip = M.lips.clone(); lowerLip.color.lerp(new THREE.Color(0xa86a5c), 0.35);
-      const upperLip = M.lips.clone(); upperLip.color.multiplyScalar(0.82);
-      set('lip_U', upperLip, true); set('lip_L', lowerLip, true); set('teeth', M.teeth, true); set('mouth', M.mouthInner, true);
+      // the reference's lower lip is warmer/lighter than the dark-tinted upper lip
+      const lowerLip = M.lips.clone(); lowerLip.color.lerp(new THREE.Color(0x8f5947), 0.20);
+      const upperLip = M.lips.clone(); upperLip.color.lerp(new THREE.Color(0x522c22), 0.45);
+      // the model's vertex colours shade the mouth (teeth darker toward the corners, interior darker at the corners)
+      const shaded = (n, m) => { if (!node[n]?.geometry.attributes.color) return m; const c = m.clone(); c.vertexColors = true; return c; };
+      // lips with vertex colours carry the lip tint on the skin colour (pharmacist_head.py LIP_TINT), fading to plain skin at
+      // their edges: they get the skin's own material, a little glossier, so they blend into the face with no outline
+      // (the colours are stored divided by the mesh's lipGain extra, as glTF vertex colours cannot go above 1)
+      const lips = (n, m) => {
+        if (!node[n]?.geometry.attributes.color) return m;
+        const c = skinMat.clone(); c.roughness = Math.max(0.3, skinMat.roughness - 0.06);
+        c.color.multiplyScalar(node[n].userData?.lipGain ?? 1); return c;
+      };
+      set('lip_U', lips('lip_U', upperLip), true); set('lip_L', lips('lip_L', lowerLip), true);
+      set('teeth', shaded('teeth', M.teeth), true); set('mouth', shaded('mouth', M.mouthInner), true);
       // skin and beard carry the same smile / frown / open morphs, so the moustache and chin move with the lips
       this.mouthParts = ['lip_U', 'lip_L', 'teeth', 'mouth', 'skin', 'beard'].map((n) => node[n]).filter(Boolean);
       this.teethMesh = node.teeth; this.mouthInner = node.mouth;
@@ -76,9 +93,10 @@ export class HeroHeadGLB extends HeroHead {
       const d = m.morphTargetDictionary; const inf = m.morphTargetInfluences; if (!d) return;
       if (d.smile !== undefined) inf[d.smile] = sp; if (d.frown !== undefined) inf[d.frown] = fr; if (d.open !== undefined) inf[d.open] = open;
     });
-    const O = open * 0.0115 + sp * 0.0036;                 // lip parting in design units (pharmacist_head.py MOUTH.smileOpen)
+    // lip parting in design units (pharmacist_head.py lip_shape: open 0.0115, MOUTH.smileOpen); the interior stays visible,
+    // it is the dark seam between the closed lips
+    const O = open * 0.0115 + sp * 0.00833;
     if (this.teethMesh) this.teethMesh.visible = O > 0.0012;
-    if (this.mouthInner) this.mouthInner.visible = O > 0.0003;
   }
 
   /** Skin z (head-group units) under design-space (x, y). */

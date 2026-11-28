@@ -275,9 +275,11 @@ export function buildHeroBody(ch, M, outfit = { kind: 'labcoat' }) {
     const sH = (phi) => mix(SH.collarTop?.[0] ?? 0.528, SH.collarTop?.[1] ?? 0.578, sBack(phi));
     const col = rolledCollar({
       phi0: SH.collarOpen ?? 0.58, rIn: () => SH.collarR ?? 0.0655, hIn: sH, stand: (phi) => sH(phi) - (SH.collarBase ?? 0.503),
+      zc: SH.collarZc ?? -0.004,
       outer: (phi, out) => {
         const pw = wrapPhi(phi); const front = 1 - smoothstep(0.6, 1.6, Math.abs(pw));
-        const back = new THREE.Vector3(Math.sin(phi) * 0.0705, hipsY + sH(phi) - 0.027, Math.cos(phi) * 0.0705 * 0.97 - 0.004);
+        const br = SH.collarBackR ?? 0.0705;
+        const back = new THREE.Vector3(Math.sin(phi) * br, hipsY + sH(phi) - 0.027, Math.cos(phi) * br * 0.97 + (SH.collarZc ?? -0.004));
         const fr = SH.pointIn
           ? onSurface(TORSO, pw * mix(1, SH.pointIn, front), mix(0.515, mix(SH.pointH ?? 0.49, (SH.pointH ?? 0.49) + 0.036, smoothstep(SH.collarOpen ?? 0.58, 1.15, Math.abs(pw))), front), 0.0042)
           : onSurface(TORSO, pw + Math.sign(pw) * 0.22 * front, mix(0.515, 0.474, front), 0.0042);
@@ -377,10 +379,13 @@ export function buildHeroBody(ch, M, outfit = { kind: 'labcoat' }) {
   }
 
   // ================================================================== NECK (skin)
-  const neckTop = female ? 0.66 : 0.665;
+  const neckCfg = outfit.neck || {};
+  const neckTop = neckCfg.top ?? (female ? 0.66 : 0.665);
   const neckG = gridGeometry(36, 30, (u, v, out) => {
     const h = mix(0.42, neckTop, v); const th = u * Math.PI * 2;
-    const [a0, b0, zo] = NECK.at(h, tmp); const a = a0 * neckK; const b = b0 * neckK;
+    const [a0, b0, zo0] = NECK.at(h, tmp); const topK = smoothstep(0.48, 0.60, h);
+    const a = a0 * neckK; const b = b0 * neckK * mix(1, neckCfg.bScale ?? 1, topK);
+    const zo = zo0 + (neckCfg.zo ?? 0) * topK;
     const [x, z] = superEllipse(th, a, b, 2.0);
     const adam = (female ? 0.0012 : 0.0045) * gauss({ x, y: h, z }, 0, 0.528, b, 0.01, 0.014, 0.02);
     const sterno = 0.002 * Math.exp(-Math.pow((Math.abs(th) - 0.55) / 0.2, 2)) * smoothstep(0.47, 0.55, h);
